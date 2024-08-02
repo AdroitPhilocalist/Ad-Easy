@@ -13,6 +13,14 @@
             <input type="password" id="password" name="password" class="form-control" required>
         </div>
         <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="company">Company Name</label>
+            <input type="text" id="company" name="company" class="form-control" required>
+        </div>
+        <div class="form-group">
             <label for="industry">Industry</label>
             <select id="industry" name="industry" class="form-control" required>
                 <option selected>None</option>
@@ -28,5 +36,6 @@
             <input type="submit" class="btn btn-primary" value="Register">
         </div>
     </form>
+    {{msg}}
 </div>
 {% endblock %}

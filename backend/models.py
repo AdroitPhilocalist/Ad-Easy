@@ -12,10 +12,11 @@ class User(db.Model):
     role = db.Column(db.String(50), nullable=False)  # admin, sponsor, influencer
 
     # Relationships
-    influencer = db.relationship('Influencer', backref='user', uselist=False, cascade="all, delete-orphan")
-    sponsor = db.relationship('Sponsor', backref='user', uselist=False, cascade="all, delete-orphan")
-    ad_requests = db.relationship('AdRequest', backref='influencer', lazy=True)
-    campaigns = db.relationship('Campaign', backref='sponsor', lazy=True)
+    influencer = db.relationship('Influencer', backref='user_influencer', uselist=False)
+    sponsor = db.relationship('Sponsor', backref='user_sponsor', uselist=False)
+    ad_requests = db.relationship('AdRequest', backref='user_ad_request')  # Ensure unique backref name
+    campaigns = db.relationship('Campaign', backref='user_campaign')  # Ensure unique backref name
+
 
 class Campaign(db.Model):
     __tablename__ = 'campaign'
@@ -34,8 +35,10 @@ class Campaign(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     # Relationships
-    ad_requests = db.relationship('AdRequest', backref='campaign', lazy=True)
-    campaign_requests = db.relationship('CampaignRequest', backref='campaign', lazy=True)
+    ad_requests = db.relationship('AdRequest', backref='campaigns_ad_requests')
+    campaign_requests = db.relationship('CampaignRequest', backref='campaign_campaign_requests')
+
+
 
 class AdRequest(db.Model):
     __tablename__ = 'ad_request'
@@ -52,8 +55,10 @@ class AdRequest(db.Model):
     payment = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
-    influencer = db.relationship('User', backref='ad_requests', foreign_keys=[influencer_id])
-    campaign = db.relationship('Campaign', backref='ad_requests', foreign_keys=[campaign_id])
+    influencer = db.relationship('User', backref='ad_requests_user', foreign_keys=[influencer_id])
+    campaign = db.relationship('Campaign', backref='ad_requests_campaign', foreign_keys=[campaign_id])
+
+
 
 class Influencer(db.Model):
     __tablename__ = 'influencer'
@@ -67,6 +72,8 @@ class Influencer(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     platform = db.Column(db.String(150), nullable=False)  # This will store the social media platforms as a comma-separated string
     flagged = db.Column(db.Boolean, default=False)
+    # Relationships
+    user = db.relationship('User', backref='influencer_user', uselist=False)
 
 class Sponsor(db.Model):
     __tablename__ = 'sponsor'
@@ -79,7 +86,8 @@ class Sponsor(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     # Relationships
-    user = db.relationship('User', backref='sponsor', uselist=False, cascade="all, delete-orphan")
+    user = db.relationship('User', backref='sponsor_user', uselist=False)
+
 
 class CampaignRequest(db.Model):
     __tablename__ = 'campaign_request'
@@ -95,5 +103,5 @@ class CampaignRequest(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
 
     # Relationships
-    campaign = db.relationship('Campaign', backref='campaign_requests', lazy=True)
+    campaign = db.relationship('Campaign', backref='campaign_requests_campaign', lazy=True)
     influencer = db.relationship('User', backref='campaign_requests', foreign_keys=[influencer_id])

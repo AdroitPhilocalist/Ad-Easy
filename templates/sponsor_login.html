@@ -19,5 +19,13 @@
     <div class="text-center mt-3">
         <a href="{{ url_for('sponsor_registration') }}">Register as Sponsor</a>
     </div>
+    <br>
+        
+    {%if credentials=="false"%}
+    <div class="alert alert-danger" role="alert">
+      {{msg}}
+    </div>
+      
+  {%endif%}
 </div>
 {% endblock %}

@@ -19,5 +19,12 @@
     <div class="text-center mt-3">
         <a href="{{ url_for('influencer_registration') }}">Register as Influencer</a>
     </div>
+    <br>
+    {%if credentials=="false"%}
+    <div class="alert alert-danger" role="alert">
+      {{msg}}
+    </div>
+      
+    {%endif%}
 </div>
 {% endblock %}

@@ -1,5 +1,8 @@
 from flask import render_template, request, redirect, url_for
 from flask import current_app as app
+# backend/controller.py
+from backend.models import db, User, Campaign, AdRequest, Influencer, Sponsor, CampaignRequest
+
 
 @app.route('/')
 def role_selection():
@@ -32,47 +35,119 @@ def admin_login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        # Redirect to admin dashboard
-        return redirect(url_for('admin_dashboard'))
-    return render_template('admin_login.html')
+        usr=User.query.filter_by(username=username,password=password).first()
+        if usr and usr.id==0:
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return render_template('admin_login.html',msg="Invalid Credentials!!",credentials="false")
+    return render_template('admin_login.html',msg="")
+        
+    
 
 @app.route('/sponsor_login', methods=['GET', 'POST'])
 def sponsor_login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        # Redirect to sponsor dashboard
-        return redirect(url_for('sponsor_dashboard'))
-    return render_template('sponsor_login.html')
+        usr=User.query.filter_by(username=username,password=password).first()
+        if usr and usr.role=='sponsor':
+            return redirect(url_for('sponsor_dashboard'))
+        else:
+            return render_template('sponsor_login.html',msg="Invalid Credentials!!",credentials="false")
+    return render_template('sponsor_login.html',msg="")
+        
+    
 
 @app.route('/influencer_login', methods=['GET', 'POST'])
 def influencer_login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        # Redirect to influencer dashboard
-        return redirect(url_for('influencer_dashboard'))
-    return render_template('influencer_login.html')
+        usr=User.query.filter_by(username=username,password=password).first()
+        if usr and usr.role=='influencer':
+            return redirect(url_for('influencer_dashboard'))
+        else:
+            return render_template('influencer_login.html',msg="Invalid Credentials!!",credentials="false")
+    return render_template('influencer_login.html',msg="")
 
 @app.route('/sponsor_registration', methods=['GET', 'POST'])
 def sponsor_registration():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        email = request.form['email']
+        company = request.form['company']
         industry = request.form['industry']
-        # Save sponsor details to database here (placeholder comment)
-        return redirect(url_for('sponsor_login'))
-    return render_template('sponsor_registration.html')
+        usr=User.query.filter_by(username=username).first()
+        
+        if not usr:
+            # Create new User
+            new_user = User(
+                username=username,
+                password=password,
+                email=email,
+                role='sponsor'
+            )
+            db.session.add(new_user)
+            db.session.commit()
+
+            # Create new Sponsor
+            new_sponsor = Sponsor(
+                name=username,
+                email=email,
+                company=company,
+                industry=industry,
+                user_id=new_user.id
+            )
+            db.session.add(new_sponsor)
+            db.session.commit()
+            return render_template('sponsor_login.html')
+        else:
+            return render_template('sponsor_registration.html',msg="Sorry, User already exists!!")
+
+    return render_template('sponsor_registration.html',msg="")
 
 @app.route('/influencer_registration', methods=['GET', 'POST'])
 def influencer_registration():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        platforms = request.form.getlist('social_media')
-        # Save influencer details to database here (placeholder comment)
-        return redirect(url_for('influencer_login'))
-    return render_template('influencer_registration.html')
+        email = request.form['email']
+        full_name = request.form['full_name']
+        niche = request.form['niche']
+        reach = request.form['reach']
+        social_media_platforms = request.form.getlist('social_media')
+        
+        # Combine the selected social media platforms into a comma-separated string
+        platforms = ', '.join(social_media_platforms)
+        usr=User.query.filter_by(username=username).first()
+        if not usr:
+        # Create new User
+            new_user = User(
+                username=username,
+                password=password,
+                email=email,
+                role='influencer'
+            )
+            db.session.add(new_user)
+            db.session.commit()
+
+            # Create new Influencer
+            new_influencer = Influencer(
+                name=full_name, 
+                email=email,
+                niche=niche,
+                reach=reach,
+                platform=platforms,
+                user_id=new_user.id
+            )
+            db.session.add(new_influencer)
+            db.session.commit()
+            return render_template('influencer_login.html')
+        else:
+            return render_template('influencer_registration.html',msg="Sorry, User already exists!!")
+
+    return render_template('influencer_registration.html',msg="")
 
 @app.route('/admin_dashboard')
 def admin_dashboard():

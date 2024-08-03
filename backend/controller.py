@@ -1,5 +1,9 @@
 from flask import render_template, request, redirect, url_for
 from flask import current_app as app
+import os
+import base64
+from io import BytesIO
+from PIL import Image
 # backend/controller.py
 from backend.models import db, User, Campaign, AdRequest, Influencer, Sponsor, CampaignRequest
 
@@ -49,13 +53,36 @@ def sponsor_login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        usr=User.query.filter_by(username=username,password=password).first()
-        if usr and usr.role=='sponsor':
-            return redirect(url_for('sponsor_dashboard'))
-        else:
-            return render_template('sponsor_login.html',msg="Invalid Credentials!!",credentials="false")
-    return render_template('sponsor_login.html',msg="")
         
+        # Authenticate user
+        usr = User.query.filter_by(username=username, password=password).first()
+        
+        if usr and usr.role == 'sponsor':
+            # Fetch the sponsor details using the user's ID
+            sponsor = Sponsor.query.filter_by(user_id=usr.id).first()
+            
+            if sponsor:
+                sponsor_campaigns=fetch_campaigns(usr.id).campaigns
+                # Redirect to the dashboard with query parameters
+                return render_template("sponsor_dashboard.html",
+                                        username=usr.username,
+                                        name=sponsor.name,
+                                        email=sponsor.email,
+                                        company=sponsor.company,
+                                        industry=sponsor.industry,
+                                        campaigns=sponsor_campaigns)
+            else:
+                # Handle case where sponsor details are not found
+                return render_template('sponsor_login.html', msg="Sponsor details not found.", credentials="false")
+        else:
+            return render_template('sponsor_login.html', msg="Invalid Credentials!!", credentials="false")
+    
+    return render_template('sponsor_login.html', msg="")
+
+
+def fetch_campaigns(id):
+            user_campaigns=User.query.filter_by(id=id).first()
+            return user_campaigns
     
 
 @app.route('/influencer_login', methods=['GET', 'POST'])
@@ -63,12 +90,30 @@ def influencer_login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        usr=User.query.filter_by(username=username,password=password).first()
-        if usr and usr.role=='influencer':
-            return redirect(url_for('influencer_dashboard'))
+        
+        # Authenticate user
+        usr = User.query.filter_by(username=username, password=password).first()
+        
+        if usr and usr.role == 'influencer':
+            # Fetch the influencer details using the user's ID
+            influencer = Influencer.query.filter_by(user_id=usr.id).first()
+            
+            if influencer:
+                # Redirect to the dashboard with query parameters
+                return redirect(url_for('influencer_dashboard',
+                                        username=usr.username,
+                                        profile_image=influencer.profile_picture if influencer.profile_picture else 'default_profile_image_url',
+                                        name=influencer.name,
+                                        niche=influencer.niche,
+                                        social_media_platforms=influencer.platform,
+                                        reach=influencer.reach))
+            else:
+                # Handle case where influencer details are not found
+                return render_template('influencer_login.html', msg="Influencer details not found.", credentials="false")
         else:
-            return render_template('influencer_login.html',msg="Invalid Credentials!!",credentials="false")
-    return render_template('influencer_login.html',msg="")
+            return render_template('influencer_login.html', msg="Invalid Credentials!!", credentials="false")
+    
+    return render_template('influencer_login.html', msg="")
 
 @app.route('/sponsor_registration', methods=['GET', 'POST'])
 def sponsor_registration():
@@ -149,25 +194,177 @@ def influencer_registration():
 
     return render_template('influencer_registration.html',msg="")
 
-@app.route('/admin_dashboard')
+@app.route('/admin/dashboard')
 def admin_dashboard():
-    # Fetch relevant statistics from the database (placeholder comment)
-    return render_template('admin_dashboard.html')
+    total_users = User.query.count()-1
+    total_influencers = Influencer.query.count()
+    total_sponsors = Sponsor.query.count()
+    total_campaigns = Campaign.query.count()
+    
+    return render_template(
+        'admin_dashboard.html',
+        total_users=total_users,
+        total_influencers=total_influencers,
+        total_sponsors=total_sponsors,
+        total_campaigns=total_campaigns
+    )
 
-@app.route('/sponsor_dashboard')
+@app.route('/admin/stats')
+def stats():
+    
+    total_users = User.query.count()
+    total_influencers = Influencer.query.count()
+    total_sponsors = Sponsor.query.count()
+    total_campaigns = Campaign.query.count()
+
+    stats_data = [total_users, total_influencers, total_sponsors, total_campaigns]
+
+    return render_template('stats.html', stats_data=stats_data)
+
+
+
+@app.route('/sponsor_dashboard', methods=['GET', 'POST'])
 def sponsor_dashboard():
-    return render_template('sponsor_dashboard.html')
-
-@app.route('/influencer_dashboard')
-def influencer_dashboard():
-    return render_template('influencer_dashboard.html')
-
-@app.route('/update_profile', methods=['GET', 'POST'])
-def update_profile():
     if request.method == 'POST':
-        # Logic to update profile details
-        return redirect(url_for('influencer_dashboard'))
-    return render_template('update_profile.html')
+        username = request.form['username']
+        company = request.form['company']
+        industry = request.form['industry']
+
+        user = User.query.filter_by(username=username).first()
+        sponsor = Sponsor.query.filter_by(user_id=user.id).first()
+
+        if sponsor:
+            sponsor.name = username
+            sponsor.company = company
+            sponsor.industry = industry
+            
+            db.session.commit()
+
+        return redirect(url_for('sponsor_dashboard', 
+                                username=username, 
+                                company=company, 
+                                industry=industry))
+
+    # Retrieve query parameters
+    username = request.args.get('username')
+    company = request.args.get('company')
+    industry = request.args.get('industry')
+    # Pass parameters to the template
+    return render_template('sponsor_dashboard.html',
+                           username=username,
+                           company=company,
+                           industry=industry)
+
+
+
+from datetime import datetime
+
+@app.route('/create_campaign/<string:username>', methods=['POST'])
+def create_campaign(username):
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        start_date_str = request.form['start_date']
+        end_date_str = request.form['end_date']
+        budget = float(request.form['budget'])
+        visibility = request.form['visibility']
+        niche = request.form['niche']
+        goals = request.form['goals']
+        sponsor = Sponsor.query.join(User).filter(User.username == username).first()
+        user_id = sponsor.user_id
+        # Convert date strings to date objects
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+
+        # Create a new campaign instance
+        new_campaign = Campaign(
+            name=name,
+            description=description,
+            start_date=start_date,
+            end_date=end_date,
+            budget=budget,
+            visibility=visibility,
+            niche=niche,
+            goals=goals,
+            status='Active',
+            flagged=False,
+            user_id=user_id
+        )
+
+        # Add to the session and commit
+        db.session.add(new_campaign)
+        db.session.commit()
+
+        return redirect(url_for('sponsor_dashboard'))
+
+    return render_template('create_campaign.html')
+
+
+
+
+
+
+@app.route('/influencer_dashboard', methods=['GET', 'POST'])
+def influencer_dashboard():
+    if request.method == 'POST':
+        username = request.form['username']
+        name = request.form['name']
+        niche = request.form['niche']
+        social_media_platforms = request.form.getlist('platforms')
+        reach = request.form['reach']
+
+        # Define the path for image upload
+        upload_folder = 'static/uploads'
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+
+        # Handle file upload
+        if 'profile_image' in request.files:
+            profile_image = request.files['profile_image']
+            if profile_image:
+                image_path = os.path.join(upload_folder, profile_image.filename)
+                profile_image.save(image_path)
+        else:
+            # Use current image path if no new image is uploaded
+            image_path = request.form.get('current_profile_image')
+
+        user = User.query.filter_by(username=username).first()
+        influencer = Influencer.query.filter_by(user_id=user.id).first()
+
+        influencer.name = name
+        influencer.niche = niche
+        influencer.platform = ','.join(social_media_platforms)
+        influencer.reach = reach
+        influencer.profile_picture = image_path
+        
+        db.session.commit()
+        
+        return redirect(url_for('influencer_dashboard', 
+                                username=username, 
+                                profile_image=image_path, 
+                                name=name, 
+                                niche=niche, 
+                                social_media_platforms=','.join(social_media_platforms), 
+                                reach=reach))
+
+    # Retrieve query parameters
+    username = request.args.get('username')
+    profile_image = request.args.get('profile_image')
+    name = request.args.get('name')
+    niche = request.args.get('niche')
+    social_media_platforms = request.args.get('social_media_platforms')
+    reach = request.args.get('reach')
+
+    # Pass parameters to the template
+    return render_template('influencer_dashboard.html',
+                           username=username,
+                           profile_image=profile_image,
+                           name=name,
+                           niche=niche,
+                           social_media_platforms=social_media_platforms,
+                           reach=reach)
+
+
 
 @app.route('/logout')
 def logout():

@@ -5,6 +5,7 @@ def init_app():
     myapp=Flask(__name__)
     myapp.debug=True
     myapp.app_context().push()
+    myapp.config['UPLOAD_FOLDER'] = 'path/to/upload/folder'
     myapp.config["SQLALCHEMY_DATABASE_URI"]="sqlite:///adeasy.sqlite3"
     
     

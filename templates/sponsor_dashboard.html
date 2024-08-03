@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sponsor Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .left-column {
+            padding-right: 15px;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #b3b3ff;">
+    <a class="navbar-brand" href="#">Sponsor Dashboard</a>
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="#">Campaigns</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Ad Requests</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Left Column for Profile Information -->
+        <div class="col-md-3 left-column">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Profile</h5>
+                    <!-- Company Name -->
+                    <p><strong>Company Name:</strong> {{ company }}</p>
+                    <!-- Industry -->
+                    <p><strong>Industry:</strong> {{ industry }}</p>
+                    <!-- Update Profile Button -->
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#updateProfileModal">Update Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column for Campaigns and Ad Requests -->
+        <div class="col-md-9">
+            <!-- Active Campaigns -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Campaigns</h5>
+                    <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#createCampaignModal">Create New Campaign</button>
+                    {% if campaigns %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Budget</th>
+                                        <th>Visibility</th>
+                                        <th>Niche</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for campaign in campaigns %}
+                                        <tr>
+                                            <td>{{ campaign.name }}</td>
+                                            <td>{{ campaign.start_date }}</td>
+                                            <td>{{ campaign.end_date }}</td>
+                                            <td>{{ campaign.budget }}</td>
+                                            <td>{{ campaign.visibility }}</td>
+                                            <td>{{ campaign.niche }}</td>
+                                            <td>{{ campaign.status }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No campaigns found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ad Requests -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Ad Requests</h5>
+                    <div class="list-group">
+                        <!-- Example Ad Request Item -->
+                        <div class="list-group-item">
+                            <h5 class="mb-1">Ad Request 1</h5>
+                            <p class="mb-1">Details about the ad request...</p>
+                            <button class="btn btn-success btn-sm">Accept</button>
+                            <button class="btn btn-danger btn-sm">Reject</button>
+                            <button class="btn btn-warning btn-sm">Negotiate</button>
+                        </div>
+                        <!-- Add more ad requests similarly -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Profile Modal -->
+<div class="modal fade" id="updateProfileModal" tabindex="-1" role="dialog" aria-labelledby="updateProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateProfileModalLabel">Update Profile</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('sponsor_dashboard') }}">
+                    <input type="hidden" name="username" value="{{ username }}">
+                    <div class="form-group">
+                        <label for="company">Company Name</label>
+                        <input type="text" id="company" name="company" class="form-control" value="{{ company }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="industry">Industry</label>
+                        <input type="text" id="industry" name="industry" class="form-control" value="{{ industry }}" required>
+                    </div>
+                    <div class="text-center">
+                        <input type="submit" class="btn btn-primary" value="Update">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Campaign Modal -->
+<div class="modal fade" id="createCampaignModal" tabindex="-1" role="dialog" aria-labelledby="createCampaignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createCampaignModalLabel">Create New Campaign</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="/create_campaign/{{ username }}">
+                    <input type="hidden" name="username" value="{{ username }}">
+                    <div class="form-group">
+                        <label for="name">Campaign Name</label>
+                        <input type="text" id="name" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" class="form-control" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="budget">Budget</label>
+                        <input type="number" id="budget" name="budget" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="visibility">Visibility</label>
+                        <select id="visibility" name="visibility" class="form-control" onchange="toggleNicheInput()" required>
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="niche-group" style="display: none;">
+                        <label for="niche">Niche</label>
+                        <select id="niche" name="niche" class="form-control">
+                            <option value="all">All</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Food & Beverage">Food & Beverage</option>
+                            <option value="Health & Wellness">Health & Wellness</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Entertainment">Entertainment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="goals">Goals</label>
+                        <textarea id="goals" name="goals" class="form-control" required></textarea>
+                    </div>
+                    <div class="text-center">
+                        <input type="submit" class="btn btn-primary" value="Create Campaign">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function toggleNicheInput() {
+        var visibility = document.getElementById('visibility').value;
+        var nicheGroup = document.getElementById('niche-group');
+        var nicheInput = document.getElementById('niche');
+        
+        if (visibility === 'public') {
+            nicheGroup.style.display = 'none';
+        } else {
+            nicheGroup.style.display = 'block';
+        }
+    }
+</script>
+
+
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

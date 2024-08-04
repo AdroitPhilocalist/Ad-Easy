@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaigns</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .campaign-card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #b3b3ff;">
+    <a class="navbar-brand" href="{{ url_for('influencer_dashboard', username=username) }}">Influencer Dashboard</a>
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('influencer_dashboard', username=username) }}">Profile</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('influencer_campaigns', username=username) }}">Campaigns</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Ad Requests</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="text-center">Campaigns</h1>
+    
+    <!-- Filter Form -->
+    <form class="form-inline mb-4" method="GET" action="{{ url_for('influencer_campaigns', username=username) }}">
+        <input class="form-control mr-2" type="text" name="name" placeholder="Campaign Name" value="{{ request.args.get('name', '') }}">
+        <select class="form-control mr-2" name="niche">
+            <option value="">All Niches</option>
+            <option value="Technology" {% if request.args.get('niche') == 'Technology' %}selected{% endif %}>Technology</option>
+            <option value="Food & Beverage" {% if request.args.get('niche') == 'Food & Beverage' %}selected{% endif %}>Food & Beverage</option>
+            <option value="Health & Wellness" {% if request.args.get('niche') == 'Health & Wellness' %}selected{% endif %}>Health & Wellness</option>
+            <option value="Fashion" {% if request.args.get('niche') == 'Fashion' %}selected{% endif %}>Fashion</option>
+            <option value="Travel" {% if request.args.get('niche') == 'Travel' %}selected{% endif %}>Travel</option>
+            <option value="Entertainment" {% if request.args.get('niche') == 'Entertainment' %}selected{% endif %}>Entertainment</option>
+        </select>
+        <button class="btn btn-primary" type="submit">Filter</button>
+    </form>
+
+    <!-- Campaigns List -->
+    <div class="row">
+        {% if campaigns %}
+            {% for campaign in campaigns %}
+                <div class="col-12 mb-4"> <!-- Ensure a margin-bottom for spacing -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ campaign.name }}</h5>
+                            <p class="card-text">
+                                <strong>Start Date:</strong> {{ campaign.start_date }}<br>
+                                <strong>End Date:</strong> {{ campaign.end_date }}<br>
+                                <strong>Budget:</strong> {{ campaign.budget }}<br>
+                                <strong>Description:</strong> {{ campaign.description }}<br>
+                                <strong>Visibility:</strong> {{ campaign.visibility }}<br>
+                                <strong>Niche:</strong> {{ campaign.niche }}<br>
+                                <strong>Status:</strong> {{ campaign.status }}<br>
+                                <strong>Goals:</strong> {{ campaign.goals }}<br>
+                                <!-- Add other campaign details if needed -->
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No campaigns found.</p>
+        {% endif %}
+    </div>
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+

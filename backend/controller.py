@@ -224,11 +224,12 @@ def stats():
 
 
 @app.route('/sponsor_dashboard', methods=['GET', 'POST'])
-def sponsor_dashboard():
+@app.route('/sponsor_dashboard/<username>', methods=['GET', 'POST'])
+def sponsor_dashboard(username=None):
     if request.method == 'POST':
-        username = request.form['username']
-        company = request.form['company']
-        industry = request.form['industry']
+        username = request.form.get('username')
+        company = request.form.get('company')
+        industry = request.form.get('industry')
 
         user = User.query.filter_by(username=username).first()
         sponsor = Sponsor.query.filter_by(user_id=user.id).first()
@@ -246,15 +247,61 @@ def sponsor_dashboard():
                                 industry=industry))
 
     # Retrieve query parameters
-    username = request.args.get('username')
+    username = username or request.args.get('username')
     company = request.args.get('company')
     industry = request.args.get('industry')
-    # Pass parameters to the template
-    return render_template('sponsor_dashboard.html',
-                           username=username,
-                           company=company,
-                           industry=industry)
+    usr = User.query.filter_by(username=username).first()
+    if usr and usr.role == 'sponsor':
+            # Fetch the sponsor details using the user's ID
+            sponsor = Sponsor.query.filter_by(user_id=usr.id).first()
+            
+            if sponsor:
+                sponsor_campaigns=fetch_campaigns(usr.id).campaigns
+                # Redirect to the dashboard with query parameters
+                return render_template("sponsor_dashboard.html",
+                                        username=usr.username,
+                                        name=sponsor.name,
+                                        email=sponsor.email,
+                                        company=sponsor.company,
+                                        industry=sponsor.industry,
+                                        campaigns=sponsor_campaigns)
 
+@app.route('/sponsor_influencers/<username>', methods=['GET'])
+def sponsor_influencers(username):
+    usr = User.query.filter_by(username=username).first()
+    if usr and usr.role == 'sponsor':
+        # Fetch all influencers
+        influencers = Influencer.query.all()
+        
+        # Additional code to handle filters if needed
+        filter_params = {
+            'niche': request.args.get('niche'),
+            'reach': request.args.get('reach')
+            # Add more filters as needed
+        }
+        
+        # Filter influencers based on query parameters
+        if filter_params['niche']:
+            influencers = [i for i in influencers if i.niche == filter_params['niche']]
+        if filter_params['reach']:
+            influencers = [i for i in influencers if i.reach >= int(filter_params['reach'])]
+        
+        return render_template('sponsor_influencers.html',
+                               username=usr.username,
+                               influencers=influencers)
+    return redirect(url_for('login'))  # Redirect to login if not authorized
+
+    
+
+@app.route('/sponsor_campaigns/<username>', methods=['GET'])
+def campaigns_page(username):
+    user = User.query.filter_by(username=username).first()
+    if user and user.role == 'sponsor':
+        sponsor = Sponsor.query.filter_by(user_id=user.id).first()
+        if sponsor:
+            sponsor_campaigns=fetch_campaigns(user.id).campaigns
+            return render_template('sponsor_campaigns.html', campaigns=sponsor_campaigns, username=username)
+    return redirect(url_for('sponsor_dashboard', username=username))
 
 
 from datetime import datetime
@@ -295,50 +342,73 @@ def create_campaign(username):
         db.session.add(new_campaign)
         db.session.commit()
 
-        return redirect(url_for('sponsor_dashboard'))
+        return redirect(f'/sponsor_campaigns/{username}')
 
     return render_template('create_campaign.html')
 
 
+@app.route('/edit_campaign/<username>', methods=['POST'])
+def edit_campaign(username):
+    if request.method == 'POST':
+        campaign_id = request.form['campaign_id']
+        campaign = Campaign.query.get(campaign_id)
+        if campaign:
+            # Update campaign details
+            campaign.name = request.form['name']
+            campaign.description = request.form['description']
+            campaign.start_date = request.form['start_date']
+            campaign.end_date = request.form['end_date']
+            campaign.budget = request.form['budget']
+            campaign.visibility = request.form['visibility']
+            campaign.niche = request.form['niche']
+            db.session.commit()
+        return redirect(f'/sponsor_campaigns/{username}')
 
+@app.route('/delete_campaign/<username>', methods=['POST'])
+def delete_campaign(username):
+    if request.method == 'POST':
+        campaign_id = request.form['campaign_id']
+        campaign = Campaign.query.get(campaign_id)
+        if campaign:
+            db.session.delete(campaign)
+            db.session.commit()
+        return redirect(f'/sponsor_campaigns/{username}')
 
 
 
 @app.route('/influencer_dashboard', methods=['GET', 'POST'])
-def influencer_dashboard():
+@app.route('/influencer_dashboard/<username>', methods=['GET', 'POST'])
+def influencer_dashboard(username=None):
     if request.method == 'POST':
+        # Extract form data
         username = request.form['username']
         name = request.form['name']
         niche = request.form['niche']
         social_media_platforms = request.form.getlist('platforms')
         reach = request.form['reach']
 
-        # Define the path for image upload
+        # Handle image upload
         upload_folder = 'static/uploads'
         if not os.path.exists(upload_folder):
             os.makedirs(upload_folder)
-
-        # Handle file upload
-        if 'profile_image' in request.files:
-            profile_image = request.files['profile_image']
-            if profile_image:
-                image_path = os.path.join(upload_folder, profile_image.filename)
-                profile_image.save(image_path)
+        profile_image = request.files.get('profile_image')
+        if profile_image:
+            image_path = os.path.join(upload_folder, profile_image.filename)
+            profile_image.save(image_path)
         else:
-            # Use current image path if no new image is uploaded
             image_path = request.form.get('current_profile_image')
 
         user = User.query.filter_by(username=username).first()
         influencer = Influencer.query.filter_by(user_id=user.id).first()
+        if influencer:
+            influencer.name = name
+            influencer.niche = niche
+            influencer.social_media_platforms = ','.join(social_media_platforms)
+            influencer.reach = reach
+            influencer.profile_picture = image_path
 
-        influencer.name = name
-        influencer.niche = niche
-        influencer.platform = ','.join(social_media_platforms)
-        influencer.reach = reach
-        influencer.profile_picture = image_path
-        
-        db.session.commit()
-        
+            db.session.commit()
+
         return redirect(url_for('influencer_dashboard', 
                                 username=username, 
                                 profile_image=image_path, 
@@ -347,22 +417,57 @@ def influencer_dashboard():
                                 social_media_platforms=','.join(social_media_platforms), 
                                 reach=reach))
 
-    # Retrieve query parameters
-    username = request.args.get('username')
-    profile_image = request.args.get('profile_image')
-    name = request.args.get('name')
-    niche = request.args.get('niche')
-    social_media_platforms = request.args.get('social_media_platforms')
-    reach = request.args.get('reach')
+    # Handle GET request
+    username = username or request.args.get('username')
+    if not username:
+        return redirect(url_for('login'))  # Redirect to login if username is not provided
 
-    # Pass parameters to the template
+    user = User.query.filter_by(username=username).first()
+    if not user or user.role != 'influencer':
+        return redirect(url_for('login'))  # Redirect to login if user is not an influencer
+
+    influencer = Influencer.query.filter_by(user_id=user.id).first()
+    if not influencer:
+        return redirect(url_for('login'))  # Redirect to login if influencer details are not found
+
     return render_template('influencer_dashboard.html',
+                           username=user.username,
+                           profile_image=influencer.profile_picture,
+                           name=influencer.name,
+                           niche=influencer.niche,
+                           social_media_platforms=influencer.platform,
+                           reach=influencer.reach)
+
+@app.route('/influencer_campaigns/<username>', methods=['GET'])
+def influencer_campaigns(username):
+    # Fetch the current influencer based on the username
+    user = User.query.filter_by(username=username).first()
+    current_influencer = Influencer.query.filter_by(user_id=user.id).first()
+
+    # Get query parameters for filtering
+    name_filter = request.args.get('name', '')
+    niche_filter = request.args.get('niche', '')
+
+    # Fetch all campaigns
+    campaigns = Campaign.query.all()
+
+    # Filter campaigns based on the influencer's niche and query parameters
+    filtered_campaigns = []
+    for campaign in campaigns:
+        if campaign.visibility == 'public':
+            filtered_campaigns.append(campaign)
+        elif campaign.visibility == 'private' and campaign.niche == current_influencer.niche:
+            filtered_campaigns.append(campaign)
+    # Apply additional filters based on name and niche
+    if name_filter:
+        filtered_campaigns = [c for c in filtered_campaigns if name_filter.lower() in c.name.lower()]
+    if niche_filter:
+        filtered_campaigns = [c for c in filtered_campaigns if c.niche == niche_filter]
+    
+
+    return render_template('influencer_campaigns.html',
                            username=username,
-                           profile_image=profile_image,
-                           name=name,
-                           niche=niche,
-                           social_media_platforms=social_media_platforms,
-                           reach=reach)
+                           campaigns=filtered_campaigns)
 
 
 

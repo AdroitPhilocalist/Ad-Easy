@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaigns</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #b3b3ff;">
+        <a class="navbar-brand" href="/sponsor_dashboard/{{ username }}">Sponsor Dashboard</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/sponsor_campaigns/{{ username }}">Campaigns</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/sponsor_influencers/{{ username }}">Influencers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="">Ad Requests</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <h1>Campaigns</h1>
+        <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#createCampaignModal">Create New Campaign</button>
+        <div class="row">
+            {% if campaigns %}
+                {% for campaign in campaigns %}
+                    <div class="col-12 mb-4"> <!-- Ensure a margin-bottom for spacing -->
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ campaign.name }}</h5>
+                                <p class="card-text">
+                                    <strong>Start Date:</strong> {{ campaign.start_date }}<br>
+                                    <strong>End Date:</strong> {{ campaign.end_date }}<br>
+                                    <strong>Budget:</strong> {{ campaign.budget }}<br>
+                                    <strong>Description:</strong> {{ campaign.description }}<br>
+                                    <strong>Visibility:</strong> {{ campaign.visibility }}<br>
+                                    <strong>Niche:</strong> {{ campaign.niche }}<br>
+                                    <strong>Status:</strong> {{ campaign.status }}<br>
+                                    <strong>Goals:</strong> {{ campaign.goals }}<br>
+                                    <!-- Add other campaign details if needed -->
+                                </p>
+                                <button class="btn btn-warning" 
+                                    data-toggle="modal" 
+                                    data-target="#editCampaignModal"
+                                    data-id="{{ campaign.id }}" 
+                                    data-name="{{ campaign.name }}" 
+                                    data-start_date="{{ campaign.start_date }}" 
+                                    data-end_date="{{ campaign.end_date }}" 
+                                    data-budget="{{ campaign.budget }}" 
+                                    data-visibility="{{ campaign.visibility }}" 
+                                    data-niche="{{ campaign.niche }}"
+                                    data-description="{{ campaign.description }}"
+                                    data-goals="{{ campaign.goals }}">
+                                Edit
+                            </button>
+                                <button class="btn btn-danger" data-toggle="modal" data-target="#deleteCampaignModal" data-id="{{ campaign.id }}">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No campaigns found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Create Campaign Modal -->
+    <div class="modal fade" id="createCampaignModal" tabindex="-1" role="dialog" aria-labelledby="createCampaignModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createCampaignModalLabel">Create New Campaign</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="createCampaignForm" method="POST" action="/create_campaign/{{ username }}">
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="start_date">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end_date">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget">Budget</label>
+                            <input type="number" class="form-control" id="budget" name="budget" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="visibility">Visibility</label>
+                            <select class="form-control" id="visibility" name="visibility" required>
+                                <option value="Public">Public</option>
+                                <option value="Private">Private</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="niche">Niche</label>
+                            <select class="form-control" id="niche" name="niche" required>
+                                <option value="All">All</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Food & Beverage">Food & Beverage</option>
+                                <option value="Health & Wellness">Health & Wellness</option>
+                                <option value="Fashion">Fashion</option>
+                                <option value="Travel">Travel</option>
+                                <option value="Entertainment">Entertainment</option>
+                            </select>
+                        <div class="form-group">
+                            <label for="goals">Goals</label>
+                            <textarea id="goals" name="goals" class="form-control" required></textarea>
+                        </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Campaign</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Edit Campaign Modal -->
+<div class="modal fade" id="editCampaignModal" tabindex="-1" role="dialog" aria-labelledby="editCampaignModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCampaignModalLabel">Edit Campaign</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editCampaignForm" method="POST" action="/edit_campaign/{{ username }}">
+                    <input type="hidden" name="campaign_id" id="editCampaignId">
+                    <div class="form-group">
+                        <label for="edit_name">Name</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_description">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_start_date">Start Date</label>
+                        <input type="date" class="form-control" id="edit_start_date" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_end_date">End Date</label>
+                        <input type="date" class="form-control" id="edit_end_date" name="end_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_budget">Budget</label>
+                        <input type="number" class="form-control" id="edit_budget" name="budget" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_visibility">Visibility</label>
+                        <select class="form-control" id="edit_visibility" name="visibility" required>
+                            <option value="Public">Public</option>
+                            <option value="Private">Private</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_niche">Niche</label>
+                        <select class="form-control" id="edit_niche" name="niche" required>
+                            <option value="All">All</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Food & Beverage">Food & Beverage</option>
+                            <option value="Health & Wellness">Health & Wellness</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Entertainment">Entertainment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_goals">Goals</label>
+                        <textarea class="form-control" id="edit_goals" name="goals" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Campaign</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- Delete Campaign Modal -->
+    <div class="modal fade" id="deleteCampaignModal" tabindex="-1" role="dialog" aria-labelledby="deleteCampaignModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteCampaignModalLabel">Delete Campaign</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="deleteCampaignForm" method="POST" action="/delete_campaign/{{ username }}">
+                        <p>Are you sure you want to delete this campaign?</p>
+                        <input type="hidden" name="campaign_id" id="deleteCampaignId">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include jQuery, Bootstrap JS, and other necessary scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // JavaScript to handle modal population with campaign data
+        $('#editCampaignModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var campaignId = button.data('id');
+        var name = button.data('name');
+        var startDate = button.data('start_date');
+        var endDate = button.data('end_date');
+        var budget = button.data('budget');
+        var visibility = button.data('visibility');
+        var niche = button.data('niche');
+        var description = button.data('description');
+        var goals = button.data('goals');
+
+        var modal = $(this);
+        modal.find('#editCampaignId').val(campaignId);
+        modal.find('#edit_name').val(name);
+        modal.find('#edit_start_date').val(startDate);
+        modal.find('#edit_end_date').val(endDate);
+        modal.find('#edit_budget').val(budget);
+        modal.find('#edit_description').val(description);
+        modal.find('#edit_goals').val(goals);
+
+        // Set the correct option for visibility
+        modal.find('#edit_visibility').val(visibility);
+
+        // Set the correct option for niche
+        modal.find('#edit_niche').val(niche);
+    });
+        $('#deleteCampaignModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var campaignId = button.data('id');
+            var modal = $(this);
+            modal.find('#deleteCampaignId').val(campaignId);
+        });
+    </script>
+</body>
+</html>

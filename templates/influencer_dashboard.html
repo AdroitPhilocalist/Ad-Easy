@@ -13,7 +13,7 @@
     <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link" href="#">Campaigns</a>
+                <a class="nav-link" href="{{ url_for('influencer_campaigns', username=username) }}">Campaigns</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#">Ad Requests</a>
@@ -34,7 +34,7 @@
                     <h5 class="card-title">Profile</h5>
                     <!-- Profile Image -->
                     <div class="mb-3">
-                        <img src="{{ profile_image }}" alt="Profile Image" class="img-fluid rounded-circle">
+                        <img src="../static/images/{{name}}.jpeg" alt="Profile Image" class="img-fluid rounded-circle">
                     </div>
                     <!-- Name -->
                     <p><strong>Name:</strong> {{ name }}</p>

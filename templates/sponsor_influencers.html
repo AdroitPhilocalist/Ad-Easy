@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Influencers</title>
+    <!-- Include Bootstrap CSS and any additional styles -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #b3b3ff;">
+        <a class="navbar-brand" href="/sponsor_dashboard/{{ username }}">Sponsor Dashboard</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/sponsor_campaigns/{{ username }}">Campaigns</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/sponsor_influencers/{{ username }}">Influencers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="">Ad Requests</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h1>Influencers</h1>
+        <form method="GET" action="/sponsor_influencers/{{ username }}" class="mb-4">
+            <div class="form-group">
+                <label for="niche">Niche</label>
+                <select class="form-control" id="niche" name="niche">
+                    <option value="">All</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Food & Beverage">Food & Beverage</option>
+                    <option value="Health & Wellness">Health & Wellness</option>
+                    <option value="Fashion">Fashion</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Entertainment">Entertainment</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reach">Minimum Reach</label>
+                <input type="number" class="form-control" id="reach" name="reach" placeholder="Enter minimum reach">
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+        <div class="row">
+            {% if influencers %}
+                {% for influencer in influencers %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            
+                            <div class="d-flex justify-content-center">
+                                <img src="../static/images/{{ influencer.name }}.jpeg" class="img-fluid rounded-circle" alt="{{ influencer.name }}" style="width: 250px; height: 250px;">
+                            </div>
+
+                            
+                            <div class="card-body">
+                                <h5 class="card-title">{{ influencer.name }}</h5>
+                                <p class="card-text">
+                                    <strong>Niche:</strong> {{ influencer.niche }}<br>
+                                    <strong>Reach:</strong> {{ influencer.reach }}<br>
+                                    <strong>Social Media:</strong> {{ influencer.platform }}<br>
+                                    <!-- Add other influencer details as needed -->
+                                </p>
+                            </div>
+                            
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No influencers found.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Include Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

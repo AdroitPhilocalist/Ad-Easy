@@ -18,10 +18,13 @@
     <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link" href="#">Campaigns</a>
+                <a class="nav-link" href="/sponsor_campaigns/{{ username }}">Campaigns</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">Ad Requests</a>
+                <a class="nav-link" href="/sponsor_influencers/{{ username }}">Influencers</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="">Ad Requests</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -53,7 +56,7 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title">Campaigns</h5>
-                    <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#createCampaignModal">Create New Campaign</button>
+                    
                     {% if campaigns %}
                         <div class="table-responsive">
                             <table class="table table-bordered">
@@ -139,86 +142,6 @@
         </div>
     </div>
 </div>
-
-<!-- Create Campaign Modal -->
-<div class="modal fade" id="createCampaignModal" tabindex="-1" role="dialog" aria-labelledby="createCampaignModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createCampaignModalLabel">Create New Campaign</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="/create_campaign/{{ username }}">
-                    <input type="hidden" name="username" value="{{ username }}">
-                    <div class="form-group">
-                        <label for="name">Campaign Name</label>
-                        <input type="text" id="name" name="name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="description">Description</label>
-                        <textarea id="description" name="description" class="form-control" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="start_date">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="end_date">End Date</label>
-                        <input type="date" id="end_date" name="end_date" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="budget">Budget</label>
-                        <input type="number" id="budget" name="budget" class="form-control" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="visibility">Visibility</label>
-                        <select id="visibility" name="visibility" class="form-control" onchange="toggleNicheInput()" required>
-                            <option value="public">Public</option>
-                            <option value="private">Private</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="niche-group" style="display: none;">
-                        <label for="niche">Niche</label>
-                        <select id="niche" name="niche" class="form-control">
-                            <option value="all">All</option>
-                            <option value="Technology">Technology</option>
-                            <option value="Food & Beverage">Food & Beverage</option>
-                            <option value="Health & Wellness">Health & Wellness</option>
-                            <option value="Fashion">Fashion</option>
-                            <option value="Travel">Travel</option>
-                            <option value="Entertainment">Entertainment</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="goals">Goals</label>
-                        <textarea id="goals" name="goals" class="form-control" required></textarea>
-                    </div>
-                    <div class="text-center">
-                        <input type="submit" class="btn btn-primary" value="Create Campaign">
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<script>
-    function toggleNicheInput() {
-        var visibility = document.getElementById('visibility').value;
-        var nicheGroup = document.getElementById('niche-group');
-        var nicheInput = document.getElementById('niche');
-        
-        if (visibility === 'public') {
-            nicheGroup.style.display = 'none';
-        } else {
-            nicheGroup.style.display = 'block';
-        }
-    }
-</script>
 
 
 

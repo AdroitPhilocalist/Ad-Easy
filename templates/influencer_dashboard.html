@@ -16,6 +16,9 @@
                 <a class="nav-link" href="{{ url_for('influencer_campaigns', username=username) }}">Campaigns</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('active_campaigns', username=username) }}">Active Campaigns</a>
+              </li>
+            <li class="nav-item">
                 <a class="nav-link" href="#">Ad Requests</a>
             </li>
             <li class="nav-item">
@@ -91,21 +94,35 @@
             </div>
 
             <!-- Ad Requests -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Ad Requests</h5>
-                    <div class="list-group">
-                        <!-- Example Ad Request Item -->
-                        <div class="list-group-item">
-                            <h5 class="mb-1">Ad Request 1</h5>
-                            <p class="mb-1">Details about the ad request...</p>
-                            <button class="btn btn-success btn-sm">Accept</button>
-                            <button class="btn btn-danger btn-sm">Reject</button>
-                            <button class="btn btn-warning btn-sm">Negotiate</button>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Ad Requests</h5>
+                        <div class="list-group">
+                            {% for ad_request in ad_requests %}
+                                <div class="list-group-item">
+                                    <h5 class="mb-1">Ad Request ID: {{ ad_request.id }}</h5>
+                                    <p class="mb-1">Campaign ID: {{ ad_request.campaign_id }}</p>
+                                    <p class="mb-1">Messages: {{ ad_request.messages }}</p>
+                                    <p class="mb-1">Requirements: {{ ad_request.requirements }}</p>
+                                    <p class="mb-1">Payment Amount: ${{ ad_request.payment_amount }}</p>
+                                    <p class="mb-1">Status: {{ ad_request.status }}</p>
+                                    <p class="mb-1">Completed: {{ ad_request.complete }}</p>
+                                    <p class="mb-1">Payment Received: {{ ad_request.payment }}</p>
+                                    <form method="POST" action="{{ url_for('accept_ad_request', ad_request_id=ad_request.id,username=username) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('reject_ad_request', ad_request_id=ad_request.id,username=username) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <div class="list-group-item">No ad requests found.</div>
+                            {% endfor %}
                         </div>
-                        <!-- Add more ad requests similarly -->
                     </div>
                 </div>
+
+
             </div>
         </div>
     </div>

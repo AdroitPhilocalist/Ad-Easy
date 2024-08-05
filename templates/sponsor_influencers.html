@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Influencers</title>
-    <!-- Include Bootstrap CSS and any additional styles -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -20,7 +19,7 @@
                     <a class="nav-link" href="/sponsor_influencers/{{ username }}">Influencers</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="">Ad Requests</a>
+                    <a class="nav-link" href="/sponsor_ad_requests/{{ username }}">Ad Requests</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -28,6 +27,7 @@
             </ul>
         </div>
     </nav>
+
     <div class="container mt-4">
         <h1>Influencers</h1>
         <form method="GET" action="/sponsor_influencers/{{ username }}" class="mb-4">
@@ -49,27 +49,28 @@
             </div>
             <button type="submit" class="btn btn-primary">Filter</button>
         </form>
+        
+        <!-- Influencer Cards -->
         <div class="row">
             {% if influencers %}
                 {% for influencer in influencers %}
                     <div class="col-md-4 mb-4">
                         <div class="card">
-                            
                             <div class="d-flex justify-content-center">
                                 <img src="../static/images/{{ influencer.name }}.jpeg" class="img-fluid rounded-circle" alt="{{ influencer.name }}" style="width: 250px; height: 250px;">
                             </div>
-
-                            
                             <div class="card-body">
                                 <h5 class="card-title">{{ influencer.name }}</h5>
                                 <p class="card-text">
                                     <strong>Niche:</strong> {{ influencer.niche }}<br>
                                     <strong>Reach:</strong> {{ influencer.reach }}<br>
                                     <strong>Social Media:</strong> {{ influencer.platform }}<br>
-                                    <!-- Add other influencer details as needed -->
                                 </p>
+                                <!-- Find Campaigns Button -->
+                                <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#campaignModal" data-influencer-id="{{ influencer.id }}">
+                                    Find Campaigns
+                                </button>
                             </div>
-                            
                         </div>
                     </div>
                 {% endfor %}
@@ -78,10 +79,106 @@
             {% endif %}
         </div>
     </div>
-    
+
+    <!-- Campaign Modal -->
+    <div class="modal fade" id="campaignModal" tabindex="-1" role="dialog" aria-labelledby="campaignModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="campaignModalLabel">Campaigns</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="campaignList" class="row">
+                        <!-- Campaign cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ad Request Modal -->
+    <div class="modal fade" id="adRequestModal" tabindex="-1" role="dialog" aria-labelledby="adRequestModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adRequestModalLabel">Ad Request</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="adRequestForm" method="POST" action="/submit_ad_request/{{ username }}">
+                        <input type="hidden" name="campaign_id" id="adCampaignId">
+                        <input type="hidden" name="influencer_id" id="adInfluencerId">
+                        <div class="form-group">
+                            <label for="messages">Messages</label>
+                            <textarea class="form-control" id="messages" name="messages" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="requirements">Requirements</label>
+                            <textarea class="form-control" id="requirements" name="requirements" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="payment_amount">Payment Amount</label>
+                            <input type="number" class="form-control" id="payment_amount" name="payment_amount" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Request</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Include Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        // JavaScript to handle displaying campaigns in the modal
+        $('#campaignModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var influencerId = button.data('influencer-id');
+            
+            fetch(`/get_campaigns_for_influencer/${influencerId}`)  // Endpoint to fetch campaigns for the influencer
+                .then(response => response.json())
+                .then(data => {
+                    const campaignList = document.getElementById('campaignList');
+                    campaignList.innerHTML = '';
+                    data.campaigns.forEach(campaign => {
+                        const campaignCard = `
+                            <div class="col-md-4 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${campaign.name}</h5>
+                                        <p class="card-text">
+                                            <strong>Description:</strong> ${campaign.description}<br>
+                                            <strong>Start Date:</strong> ${campaign.start_date}<br>
+                                            <strong>End Date:</strong> ${campaign.end_date}<br>
+                                        </p>
+                                        <button class="btn btn-primary" data-toggle="modal" data-target="#adRequestModal" data-campaign-id="${campaign.id}" data-influencer-id="${influencerId}">Ad Request</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        campaignList.insertAdjacentHTML('beforeend', campaignCard);
+                    });
+                });
+        });
+
+        // Populate ad request modal with campaign and influencer IDs
+        $('#adRequestModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var campaignId = button.data('campaign-id');
+            var influencerId = button.data('influencer-id');
+            
+            var modal = $(this);
+            modal.find('#adCampaignId').val(campaignId);
+            modal.find('#adInfluencerId').val(influencerId);
+        });
+    </script>
 </body>
 </html>

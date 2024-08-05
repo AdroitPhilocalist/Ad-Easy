@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for
 from flask import current_app as app
 import os
-import base64
+from flask import jsonify
 from io import BytesIO
 from PIL import Image
 # backend/controller.py
@@ -265,6 +265,28 @@ def sponsor_dashboard(username=None):
                                         company=sponsor.company,
                                         industry=sponsor.industry,
                                         campaigns=sponsor_campaigns)
+            
+
+@app.route('/sponsor_ad_requests/<string:username>')
+def sponsor_ad_requests(username):
+    # Fetch the sponsor user
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        return "User not found", 404
+    
+    sponsor = Sponsor.query.filter_by(user_id=user.id).first()
+    if sponsor is None:
+        return "Sponsor not found", 404
+    
+    # Fetch all ad requests associated with the sponsor
+    ad_requests = AdRequest.query.join(Campaign).filter(
+        Campaign.user_id == sponsor.user_id
+    ).all()
+
+    return render_template('sponsor_ad_requests.html', username=username, ad_requests=ad_requests)
+
+
+
 
 @app.route('/sponsor_influencers/<username>', methods=['GET'])
 def sponsor_influencers(username):
@@ -290,6 +312,54 @@ def sponsor_influencers(username):
                                username=usr.username,
                                influencers=influencers)
     return redirect(url_for('login'))  # Redirect to login if not authorized
+
+@app.route('/submit_ad_request/<username>', methods=['POST'])
+def submit_ad_request(username):
+    user = User.query.filter_by(username=username).first()
+    if not user or user.role != 'sponsor':
+        
+        return redirect(url_for('sponsor_dashboard', username=username))
+
+    campaign_id = request.form.get('campaign_id')
+    influencer_id = request.form.get('influencer_id')
+    messages = request.form.get('messages')
+    requirements = request.form.get('requirements')
+    payment_amount = float(request.form['payment_amount'])
+    status = 'Pending'
+
+    campaign = Campaign.query.get(campaign_id)
+    influencer = Influencer.query.get(influencer_id)
+
+    
+
+    ad_request = AdRequest(
+        campaign_id=campaign_id,
+        influencer_id=influencer_id,
+        messages=messages,
+        requirements=requirements,
+        payment_amount=payment_amount,
+        status=status
+    )
+
+    db.session.add(ad_request)
+    db.session.commit()
+    return redirect(url_for('sponsor_dashboard', username=username))
+@app.route('/get_campaigns_for_influencer/<int:influencer_id>')
+def get_campaigns_for_influencer(influencer_id):
+    influencer = Influencer.query.get(influencer_id)
+    if not influencer:
+        return jsonify({'error': 'Influencer not found'}), 404
+
+    campaigns = Campaign.query.all()
+    campaign_list = [{
+        'id': campaign.id,
+        'name': campaign.name,
+        'description': campaign.description,
+        'start_date': campaign.start_date.strftime('%Y-%m-%d'),
+        'end_date': campaign.end_date.strftime('%Y-%m-%d')
+    } for campaign in campaigns]
+
+    return jsonify({'campaigns': campaign_list})
 
     
 
@@ -353,14 +423,19 @@ def edit_campaign(username):
         campaign_id = request.form['campaign_id']
         campaign = Campaign.query.get(campaign_id)
         if campaign:
+            start_date_str = request.form['start_date']
+            end_date_str = request.form['end_date']
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
             # Update campaign details
             campaign.name = request.form['name']
             campaign.description = request.form['description']
-            campaign.start_date = request.form['start_date']
-            campaign.end_date = request.form['end_date']
+            campaign.start_date = start_date
+            campaign.end_date = end_date
             campaign.budget = request.form['budget']
             campaign.visibility = request.form['visibility']
             campaign.niche = request.form['niche']
+            
             db.session.commit()
         return redirect(f'/sponsor_campaigns/{username}')
 
@@ -373,6 +448,7 @@ def delete_campaign(username):
             db.session.delete(campaign)
             db.session.commit()
         return redirect(f'/sponsor_campaigns/{username}')
+    
 
 
 
@@ -400,6 +476,7 @@ def influencer_dashboard(username=None):
 
         user = User.query.filter_by(username=username).first()
         influencer = Influencer.query.filter_by(user_id=user.id).first()
+        ad_requests = AdRequest.query.filter_by(influencer_id=influencer.id).all()
         if influencer:
             influencer.name = name
             influencer.niche = niche
@@ -415,7 +492,8 @@ def influencer_dashboard(username=None):
                                 name=name, 
                                 niche=niche, 
                                 social_media_platforms=','.join(social_media_platforms), 
-                                reach=reach))
+                                reach=reach,
+                                ad_requests=ad_requests))
 
     # Handle GET request
     username = username or request.args.get('username')
@@ -423,6 +501,8 @@ def influencer_dashboard(username=None):
         return redirect(url_for('login'))  # Redirect to login if username is not provided
 
     user = User.query.filter_by(username=username).first()
+    influencer = Influencer.query.filter_by(user_id=user.id).first()
+    ad_requests = AdRequest.query.filter_by(influencer_id=influencer.id).all()
     if not user or user.role != 'influencer':
         return redirect(url_for('login'))  # Redirect to login if user is not an influencer
 
@@ -436,7 +516,8 @@ def influencer_dashboard(username=None):
                            name=influencer.name,
                            niche=influencer.niche,
                            social_media_platforms=influencer.platform,
-                           reach=influencer.reach)
+                           reach=influencer.reach,
+                           ad_requests=ad_requests)
 
 @app.route('/influencer_campaigns/<username>', methods=['GET'])
 def influencer_campaigns(username):
@@ -468,6 +549,65 @@ def influencer_campaigns(username):
     return render_template('influencer_campaigns.html',
                            username=username,
                            campaigns=filtered_campaigns)
+@app.route('/accept_ad_request/<int:ad_request_id>/<string:username>', methods=['POST'])
+def accept_ad_request(ad_request_id,username):
+    ad_request = AdRequest.query.get(ad_request_id)
+    if ad_request:
+        ad_request.status = "Accepted and Active"
+        db.session.commit()
+        return redirect(url_for('influencer_dashboard', username=username))
+    return "Ad Request not found", 404
+
+@app.route('/reject_ad_request/<int:ad_request_id>/<string:username>', methods=['POST'])
+def reject_ad_request(ad_request_id,username):
+    ad_request = AdRequest.query.get(ad_request_id)
+    if ad_request:
+        db.session.delete(ad_request)
+        db.session.commit()
+        return redirect(url_for('influencer_dashboard', username=username))
+    return "Ad Request not found", 404
+
+@app.route('/active_campaigns/<string:username>')
+def active_campaigns(username):
+    # Fetch the user and influencer based on username
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        return "User not found", 404
+    
+    current_influencer = Influencer.query.filter_by(user_id=user.id).first()
+    if current_influencer is None:
+        return "Influencer not found", 404
+    
+    influencer_id = current_influencer.id
+
+    # Query to get active campaigns for the influencer
+    active_campaigns = db.session.query(Campaign).join(AdRequest).filter(
+        AdRequest.influencer_id == influencer_id,
+        AdRequest.status == "Accepted and Active"
+    ).all()
+    
+    # Fetch the company names of the sponsors
+    campaigns_with_sponsors = []
+    for campaign in active_campaigns:
+        # Get the sponsor's user object
+        sponsor_user = User.query.filter_by(id=campaign.user_id).first()
+        sponsor_company = 'Unknown'  # Default if no sponsor is found
+        if sponsor_user:
+            sponsor_sponsor = Sponsor.query.filter_by(user_id=sponsor_user.id).first()
+            if sponsor_sponsor:
+                sponsor_company = sponsor_sponsor.company
+        
+        # Append campaign info with sponsor company
+        campaigns_with_sponsors.append({
+            'campaign': campaign,
+            'sponsor_company': sponsor_company
+        })
+
+    return render_template('active_campaigns.html', username=username, campaigns=campaigns_with_sponsors)
+
+
+
+
 
 
 

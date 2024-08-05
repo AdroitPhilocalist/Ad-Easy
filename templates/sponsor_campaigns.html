@@ -20,7 +20,7 @@
                     <a class="nav-link" href="/sponsor_influencers/{{ username }}">Influencers</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="">Ad Requests</a>
+                    <a class="nav-link" href="/sponsor_ad_requests/{{ username }}">Ad Requests</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -87,37 +87,38 @@
                 </div>
                 <div class="modal-body">
                     <form id="createCampaignForm" method="POST" action="/create_campaign/{{ username }}">
+                        <input type="hidden" name="username" value="{{ username }}">
                         <div class="form-group">
-                            <label for="name">Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            <label for="name">Campaign Name</label>
+                            <input type="text" id="name" name="name" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="description">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                            <textarea id="description" name="description" class="form-control" required></textarea>
                         </div>
                         <div class="form-group">
                             <label for="start_date">Start Date</label>
-                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                            <input type="date" id="start_date" name="start_date" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="end_date">End Date</label>
-                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                            <input type="date" id="end_date" name="end_date" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="budget">Budget</label>
-                            <input type="number" class="form-control" id="budget" name="budget" required>
+                            <input type="number" id="budget" name="budget" class="form-control" step="0.01" required>
                         </div>
                         <div class="form-group">
                             <label for="visibility">Visibility</label>
-                            <select class="form-control" id="visibility" name="visibility" required>
-                                <option value="Public">Public</option>
-                                <option value="Private">Private</option>
+                            <select id="visibility" name="visibility" class="form-control" onchange="toggleNicheInput()" required>
+                                <option value="public">Public</option>
+                                <option value="private">Private</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="niche-group" style="display: none;">
                             <label for="niche">Niche</label>
-                            <select class="form-control" id="niche" name="niche" required>
-                                <option value="All">All</option>
+                            <select id="niche" name="niche" class="form-control">
+                                <option value="all">All</option>
                                 <option value="Technology">Technology</option>
                                 <option value="Food & Beverage">Food & Beverage</option>
                                 <option value="Health & Wellness">Health & Wellness</option>
@@ -125,12 +126,14 @@
                                 <option value="Travel">Travel</option>
                                 <option value="Entertainment">Entertainment</option>
                             </select>
+                        </div>
                         <div class="form-group">
                             <label for="goals">Goals</label>
                             <textarea id="goals" name="goals" class="form-control" required></textarea>
                         </div>
+                        <div class="text-center">
+                            <input type="submit" class="btn btn-primary" value="Create Campaign">
                         </div>
-                        <button type="submit" class="btn btn-primary">Create Campaign</button>
                     </form>
                 </div>
             </div>
@@ -171,14 +174,14 @@
                     </div>
                     <div class="form-group">
                         <label for="edit_visibility">Visibility</label>
-                        <select class="form-control" id="edit_visibility" name="visibility" required>
+                        <select class="form-control" id="edit_visibility" name="visibility" onchange="toggleNicheInput2()" required>
                             <option value="Public">Public</option>
                             <option value="Private">Private</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="niche-group">
                         <label for="edit_niche">Niche</label>
-                        <select class="form-control" id="edit_niche" name="niche" required>
+                        <select class="form-control" id="edit_niche" name="niche" onchange="toggleNicheInput2()" required>
                             <option value="All">All</option>
                             <option value="Technology">Technology</option>
                             <option value="Food & Beverage">Food & Beverage</option>
@@ -229,38 +232,67 @@
     <script>
         // JavaScript to handle modal population with campaign data
         $('#editCampaignModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget); // Button that triggered the modal
-        var campaignId = button.data('id');
-        var name = button.data('name');
-        var startDate = button.data('start_date');
-        var endDate = button.data('end_date');
-        var budget = button.data('budget');
-        var visibility = button.data('visibility');
-        var niche = button.data('niche');
-        var description = button.data('description');
-        var goals = button.data('goals');
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var campaignId = button.data('id');
+            var name = button.data('name');
+            var startDate = button.data('start_date');
+            var endDate = button.data('end_date');
+            var budget = button.data('budget');
+            var visibility = button.data('visibility');
+            var niche = button.data('niche');
+            var description = button.data('description');
+            var goals = button.data('goals');
+    
+            var modal = $(this);
+            modal.find('#editCampaignId').val(campaignId);
+            modal.find('#edit_name').val(name);
+            modal.find('#edit_start_date').val(startDate);
+            modal.find('#edit_end_date').val(endDate);
+            modal.find('#edit_budget').val(budget);
+            modal.find('#edit_visibility').val(visibility);
+            modal.find('#edit_niche').val(niche);
+            modal.find('#edit_description').val(description);
+            modal.find('#edit_goals').val(goals);
+            toggleNicheInput2();
+        });
+        function toggleNicheInput2() {
+        var visibility = $('#edit_visibility').val();
+        var nicheGroup = $('#niche-group');
+        var nicheSelect = $('#edit_niche');
 
-        var modal = $(this);
-        modal.find('#editCampaignId').val(campaignId);
-        modal.find('#edit_name').val(name);
-        modal.find('#edit_start_date').val(startDate);
-        modal.find('#edit_end_date').val(endDate);
-        modal.find('#edit_budget').val(budget);
-        modal.find('#edit_description').val(description);
-        modal.find('#edit_goals').val(goals);
+        if (visibility === 'Private') {
+            nicheGroup.show();
+            nicheSelect.prop('readonly', false); // Allow editing
+        } else {
+            nicheGroup.show();
+            nicheSelect.val('All').prop('readonly', true); // Set to 'All' and make read-only
+        }
+    }
 
-        // Set the correct option for visibility
-        modal.find('#edit_visibility').val(visibility);
-
-        // Set the correct option for niche
-        modal.find('#edit_niche').val(niche);
+    // Initialize visibility and behavior based on current selection when modal is loaded
+    $('#editCampaignModal').on('shown.bs.modal', function () {
+        toggleNicheInput2();
     });
+    
+        // JavaScript for delete campaign modal
         $('#deleteCampaignModal').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget);
             var campaignId = button.data('id');
             var modal = $(this);
             modal.find('#deleteCampaignId').val(campaignId);
         });
+    </script>
+    <script>
+        function toggleNicheInput() {
+            var visibility = document.getElementById('visibility').value;
+            var nicheGroup = document.getElementById('niche-group');
+        
+            if (visibility === 'private') {
+                nicheGroup.style.display = 'block';
+            } else {
+                nicheGroup.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>

@@ -10,7 +10,7 @@
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #b3b3ff;">
-        <a class="navbar-brand" href="#">Sponsor Dashboard</a>
+        <a class="navbar-brand" href="/sponsor_dashboard/{{ username }}">Sponsor Dashboard</a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
@@ -21,6 +21,9 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/sponsor_ad_requests/{{ username }}">Ad Requests</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/sponsor_campaign_requests/{{ username }}">Campaign Requests</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -50,6 +53,71 @@
                                     <strong>Payment Confirmed:</strong> {{ 'Yes' if request.payment else 'No' }}<br>
                                     <!-- Add other request details if needed -->
                                 </p>
+                                <!-- Edit and Delete Buttons -->
+                                <button class="btn btn-primary" data-toggle="modal" data-target="#editModal{{ request.id }}">Edit</button>
+                                <form action="{{ url_for('delete_ad_request', request_id=request.id) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Edit Modal -->
+                    <div class="modal fade" id="editModal{{ request.id }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editModalLabel">Edit Ad Request #{{ request.id }}</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <form action="{{ url_for('edit_ad_request', request_id=request.id) }}" method="POST">
+                                    <div class="modal-body">
+                                        <div class="form-group">
+                                            <label for="campaignName">Campaign Name</label>
+                                            <input type="text" class="form-control" id="campaignName" name="campaign_name" value="{{ request.campaign.name }}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="messages">Messages</label>
+                                            <textarea class="form-control" id="messages" name="messages" rows="3" required>{{ request.messages }}</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="requirements">Requirements</label>
+                                            <textarea class="form-control" id="requirements" name="requirements" rows="3" required>{{ request.requirements }}</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="paymentAmount">Payment Amount</label>
+                                            <input type="number" class="form-control" id="paymentAmount" name="payment_amount" value="{{ request.payment_amount }}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="status">Status</label>
+                                            <select class="form-control" id="status" name="status">
+                                                <option value="Pending" {% if request.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                                <option value="Accepted" {% if request.status == 'Accepted' %}selected{% endif %}>Accepted</option>
+                                                <option value="Rejected" {% if request.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="complete">Complete</label>
+                                            <select class="form-control" id="complete" name="complete">
+                                                <option value="True" {% if request.complete %}selected{% endif %}>Yes</option>
+                                                <option value="False" {% if not request.complete %}selected{% endif %}>No</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="payment">Payment Confirmed</label>
+                                            <select class="form-control" id="payment" name="payment">
+                                                <option value="True" {% if request.payment %}selected{% endif %}>Yes</option>
+                                                <option value="False" {% if not request.payment %}selected{% endif %}>No</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-primary">Save changes</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -60,7 +128,6 @@
         </div>
     </div>
     
-
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>

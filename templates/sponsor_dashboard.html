@@ -14,7 +14,7 @@
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #b3b3ff;">
-    <a class="navbar-brand" href="#">Sponsor Dashboard</a>
+    <a class="navbar-brand" href="/sponsor_dashboard/{{ username }}">Sponsor Dashboard</a>
     <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
@@ -25,6 +25,9 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/sponsor_ad_requests/{{ username }}">Ad Requests</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/sponsor_campaign_requests/{{ username }}">Campaign Requests</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -91,24 +94,41 @@
                     {% endif %}
                 </div>
             </div>
-
-            <!-- Ad Requests -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Ad Requests</h5>
-                    <div class="list-group">
-                        <!-- Example Ad Request Item -->
-                        <div class="list-group-item">
-                            <h5 class="mb-1">Ad Request 1</h5>
-                            <p class="mb-1">Details about the ad request...</p>
-                            <button class="btn btn-success btn-sm">Accept</button>
-                            <button class="btn btn-danger btn-sm">Reject</button>
-                            <button class="btn btn-warning btn-sm">Negotiate</button>
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-md-12">
+                        <!-- Campaign Requests -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Campaign Requests</h5>
+                                <div class="list-group">
+                                    {% if campaign_requests %}
+                                        {% for request in campaign_requests %}
+                                            <div class="list-group-item">
+                                                <h5 class="mb-1">Campaign ID: {{ request.campaign_id }}</h5>
+                                                <p class="mb-1">Message: {{ request.messages }}</p>
+                                                <p class="mb-1">Payment Amount: {{ request.payment_amount }}</p>
+                                                <p class="mb-1">Status: {{ request.status }}</p>
+                                                <p class="mb-1">Created At: {{ request.created_at }}</p>
+                                                <form method="POST" action="{{ url_for('handle_campaign_request', request_id=request.id, action='accept') }}" class="d-inline">
+                                                    <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('handle_campaign_request', request_id=request.id, action='reject') }}" class="d-inline">
+                                                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                                </form>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p>No campaign requests found.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                        <!-- Add more ad requests similarly -->
                     </div>
                 </div>
             </div>
+
+
         </div>
     </div>
 </div>

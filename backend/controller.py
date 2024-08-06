@@ -63,6 +63,8 @@ def sponsor_login():
             
             if sponsor:
                 sponsor_campaigns=fetch_campaigns(usr.id).campaigns
+                campaign_requests = CampaignRequest.query.filter_by(sponsor_id=sponsor.id, status='Pending').all()
+
                 # Redirect to the dashboard with query parameters
                 return render_template("sponsor_dashboard.html",
                                         username=usr.username,
@@ -70,7 +72,8 @@ def sponsor_login():
                                         email=sponsor.email,
                                         company=sponsor.company,
                                         industry=sponsor.industry,
-                                        campaigns=sponsor_campaigns)
+                                        campaigns=sponsor_campaigns,
+                                        campaign_requests=campaign_requests)
             else:
                 # Handle case where sponsor details are not found
                 return render_template('sponsor_login.html', msg="Sponsor details not found.", credentials="false")
@@ -252,20 +255,111 @@ def sponsor_dashboard(username=None):
     industry = request.args.get('industry')
     usr = User.query.filter_by(username=username).first()
     if usr and usr.role == 'sponsor':
-            # Fetch the sponsor details using the user's ID
-            sponsor = Sponsor.query.filter_by(user_id=usr.id).first()
+        # Fetch the sponsor details using the user's ID
+        sponsor = Sponsor.query.filter_by(user_id=usr.id).first()
+        
+        if sponsor:
+            # Fetch sponsor's campaigns and campaign requests
+            sponsor_campaigns = Campaign.query.filter_by(user_id=usr.id).all()
+            campaign_requests = CampaignRequest.query.filter_by(sponsor_id=sponsor.id, status='Pending').all()
+
+            return render_template("sponsor_dashboard.html",
+                                    username=usr.username,
+                                    name=sponsor.name,
+                                    email=sponsor.email,
+                                    company=sponsor.company,
+                                    industry=sponsor.industry,
+                                    campaigns=sponsor_campaigns,
+                                    campaign_requests=campaign_requests)
+
+@app.route('/sponsor_campaign_requests/<username>', methods=['GET'])
+def sponsor_campaign_requests(username):
+    usr = User.query.filter_by(username=username).first()
+    
+    if usr and usr.role == 'sponsor':
+        sponsor = Sponsor.query.filter_by(user_id=usr.id).first()
+        
+        if sponsor:
+            # Fetch campaign requests for the sponsor
+            campaign_requests = CampaignRequest.query.filter_by(sponsor_id=sponsor.id).all()
             
-            if sponsor:
-                sponsor_campaigns=fetch_campaigns(usr.id).campaigns
-                # Redirect to the dashboard with query parameters
-                return render_template("sponsor_dashboard.html",
-                                        username=usr.username,
-                                        name=sponsor.name,
-                                        email=sponsor.email,
-                                        company=sponsor.company,
-                                        industry=sponsor.industry,
-                                        campaigns=sponsor_campaigns)
-            
+            return render_template("sponsor_campaign_requests.html",
+                                    username=usr.username,
+                                    name=sponsor.name,
+                                    email=sponsor.email,
+                                    company=sponsor.company,
+                                    industry=sponsor.industry,
+                                    campaign_requests=campaign_requests)
+    
+    # Handle cases where user is not found or does not have the correct role
+    return redirect(url_for('index'))
+
+
+
+@app.route('/handle_campaign_request/<int:request_id>/<action>', methods=['POST'])
+def handle_campaign_request(request_id, action):
+    campaign_request = CampaignRequest.query.get(request_id)
+    
+    if campaign_request:
+        if action == 'accept':
+            # Update the request status
+            campaign_request.status = 'Accepted'
+        elif action == 'reject':
+            # Delete the request from the database
+            db.session.delete(campaign_request)
+        
+        db.session.commit()
+
+        # Redirect to sponsor dashboard
+        sponsor = Sponsor.query.get(campaign_request.sponsor_id)
+        if sponsor:
+            return redirect(url_for('sponsor_dashboard', username=sponsor.user.username))
+    
+    # Handle cases where the request or sponsor is not found
+    return redirect(url_for('index'))
+
+@app.route('/edit_ad_request/<int:request_id>', methods=['POST'])
+def edit_ad_request(request_id):
+    ad_request = AdRequest.query.get(request_id)
+    
+    if ad_request:
+        ad_request.campaign_name = request.form['campaign_name']
+        ad_request.messages = request.form['messages']
+        ad_request.requirements = request.form['requirements']
+        ad_request.payment_amount = request.form['payment_amount']
+        ad_request.status = request.form['status']
+        ad_request.complete = request.form['complete'] == 'True'
+        ad_request.payment = request.form['payment'] == 'True'
+        
+        db.session.commit()
+
+    return redirect(url_for('sponsor_ad_requests', username=ad_request.sponsor.user.username))
+
+@app.route('/delete_ad_request/<int:request_id>', methods=['POST'])
+def delete_ad_request(request_id):
+    # Fetch the ad request
+    ad_request = AdRequest.query.get(request_id)
+    if ad_request is None:
+        return "Ad Request not found", 404
+
+    # Delete the ad request
+    db.session.delete(ad_request)
+    db.session.commit()
+
+    # Find the associated sponsor through the campaign
+    campaign = Campaign.query.get(ad_request.campaign_id)
+    if campaign is None:
+        return "Campaign not found", 404
+
+    sponsor = Sponsor.query.filter_by(user_id=campaign.user_id).first()
+    if sponsor is None:
+        return "Sponsor not found", 404
+
+    # Redirect to the sponsor ad requests page
+    return redirect(url_for('sponsor_ad_requests', username=sponsor.user.username))
+
+
+
 
 @app.route('/sponsor_ad_requests/<string:username>')
 def sponsor_ad_requests(username):
@@ -278,12 +372,13 @@ def sponsor_ad_requests(username):
     if sponsor is None:
         return "Sponsor not found", 404
     
-    # Fetch all ad requests associated with the sponsor
-    ad_requests = AdRequest.query.join(Campaign).filter(
+    # Fetch all ad requests associated with the sponsor's campaigns and include influencer details
+    ad_requests = AdRequest.query.join(Campaign).join(User, AdRequest.influencer_id == User.id).filter(
         Campaign.user_id == sponsor.user_id
     ).all()
 
     return render_template('sponsor_ad_requests.html', username=username, ad_requests=ad_requests)
+
 
 
 
@@ -344,6 +439,7 @@ def submit_ad_request(username):
     db.session.add(ad_request)
     db.session.commit()
     return redirect(url_for('sponsor_dashboard', username=username))
+
 @app.route('/get_campaigns_for_influencer/<int:influencer_id>')
 def get_campaigns_for_influencer(influencer_id):
     influencer = Influencer.query.get(influencer_id)
@@ -476,7 +572,7 @@ def influencer_dashboard(username=None):
 
         user = User.query.filter_by(username=username).first()
         influencer = Influencer.query.filter_by(user_id=user.id).first()
-        ad_requests = AdRequest.query.filter_by(influencer_id=influencer.id).all()
+        ad_requests = AdRequest.query.filter_by(influencer_id=influencer.id, status='Pending').all()
         if influencer:
             influencer.name = name
             influencer.niche = niche
@@ -502,7 +598,7 @@ def influencer_dashboard(username=None):
 
     user = User.query.filter_by(username=username).first()
     influencer = Influencer.query.filter_by(user_id=user.id).first()
-    ad_requests = AdRequest.query.filter_by(influencer_id=influencer.id).all()
+    ad_requests = AdRequest.query.filter_by(influencer_id=influencer.id, status='Pending').all()
     if not user or user.role != 'influencer':
         return redirect(url_for('login'))  # Redirect to login if user is not an influencer
 
@@ -604,6 +700,49 @@ def active_campaigns(username):
         })
 
     return render_template('active_campaigns.html', username=username, campaigns=campaigns_with_sponsors)
+
+
+@app.route('/submit_campaign_request/<string:username>', methods=['POST'])
+def submit_campaign_request(username):
+    # Fetch the influencer user
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        return "User not found", 404
+
+    # Get form data
+    campaign_id = request.form.get('campaign_id')
+    messages = request.form.get('messages')
+    payment_amount = request.form.get('payment_amount')
+    campaign = Campaign.query.filter_by(id=campaign_id).first()
+    if campaign is None:
+        return "Campaign not found", 404
+
+    # Get the user_id associated with the campaign
+    sponsor_user = User.query.filter_by(id=campaign.user_id).first()
+    if sponsor_user is None:
+        return "Sponsor user not found", 404
+
+    # Fetch the sponsor using the user_id
+    sponsor = Sponsor.query.filter_by(user_id=sponsor_user.id).first()
+    if sponsor is None:
+        return "Sponsor not found", 404
+
+    # Create new CampaignRequest entry
+    campaign_request = CampaignRequest(
+        campaign_id=campaign_id,
+        influencer_id=user.id,
+        sponsor_id=sponsor.id,
+        messages=messages,
+        payment_amount=payment_amount,
+        status='Pending'
+    )
+
+    # Add to the database
+    db.session.add(campaign_request)
+    db.session.commit()
+
+    return redirect(url_for('influencer_campaigns', username=username))
+
 
 
 

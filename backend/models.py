@@ -95,7 +95,9 @@ class CampaignRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
     influencer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sponsor_id = db.Column(db.Integer, db.ForeignKey('sponsor.id'), nullable=False)  # Added this field
     messages = db.Column(db.Text, nullable=True)
+    payment_amount = db.Column(db.Float, nullable=False)  # Added this field
     status = db.Column(db.String(10), nullable=False)  # Pending, Accepted, Rejected
     complete = db.Column(db.Boolean, default=False, nullable=False)
     complete_confirmed = db.Column(db.Boolean, default=False, nullable=False)
@@ -105,3 +107,5 @@ class CampaignRequest(db.Model):
     # Relationships
     campaign = db.relationship('Campaign', backref='campaign_requests_campaign', lazy=True)
     influencer = db.relationship('User', backref='campaign_requests', foreign_keys=[influencer_id])
+    sponsor = db.relationship('Sponsor', backref='campaign_requests_sponsor', foreign_keys=[sponsor_id])
+

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find All Records</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .flag-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <a class="navbar-brand" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('find_all') }}">Find</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stats') }}">Stats</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('info') }}">Info</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h2>All Influencers</h2>
+    <div class="row">
+        {% for influencer in influencers %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ influencer.name }}</h5>
+                        <p class="card-text">
+                            <strong>Email:</strong> {{ influencer.email }}<br>
+                            <strong>Social Media Platforms:</strong> {{ influencer.social_media_platforms }}<br>
+                            <strong>Reach:</strong> {{ influencer.reach }}<br>
+                            <!-- Add other influencer details if needed -->
+                        </p>
+                        <form action="{{ url_for('delete_record', record_type='influencer', record_id=influencer.id) }}" method="post">
+                            <button type="submit" class="btn flag-btn">Flag for Deletion</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <h2>All Sponsors</h2>
+    <div class="row">
+        {% for sponsor in sponsors %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ sponsor.name }}</h5>
+                        <p class="card-text">
+                            <strong>Email:</strong> {{ sponsor.email }}<br>
+                            <strong>Company:</strong> {{ sponsor.company }}<br>
+                            <strong>Industry:</strong> {{ sponsor.industry }}<br>
+                            <!-- Add other sponsor details if needed -->
+                        </p>
+                        <form action="{{ url_for('delete_record', record_type='sponsor', record_id=sponsor.id) }}" method="post">
+                            <button type="submit" class="btn flag-btn">Flag for Deletion</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <h2>All Campaigns</h2>
+    <div class="row">
+        {% for campaign in campaigns %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ campaign.name }}</h5>
+                        <p class="card-text">
+                            <strong>Start Date:</strong> {{ campaign.start_date }}<br>
+                            <strong>End Date:</strong> {{ campaign.end_date }}<br>
+                            <strong>Budget:</strong> {{ campaign.budget }}<br>
+                            <strong>Description:</strong> {{ campaign.description }}<br>
+                            <!-- Add other campaign details if needed -->
+                        </p>
+                        <form action="{{ url_for('delete_record', record_type='campaign', record_id=campaign.id) }}" method="post">
+                            <button type="submit" class="btn flag-btn">Flag for Deletion</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

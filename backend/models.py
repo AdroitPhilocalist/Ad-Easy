@@ -12,10 +12,10 @@ class User(db.Model):
     role = db.Column(db.String(50), nullable=False)  # admin, sponsor, influencer
 
     # Relationships
-    influencer = db.relationship('Influencer', backref='user_influencer', uselist=False)
-    sponsor = db.relationship('Sponsor', backref='user_sponsor', uselist=False)
-    ad_requests = db.relationship('AdRequest', backref='user_ad_request')  # Ensure unique backref name
-    campaigns = db.relationship('Campaign', backref='user_campaign')  # Ensure unique backref name
+    influencer = db.relationship('Influencer', backref='user_influencer', uselist=False, cascade="all, delete-orphan")
+    sponsor = db.relationship('Sponsor', backref='user_sponsor', uselist=False, cascade="all, delete-orphan")
+    ad_requests = db.relationship('AdRequest', backref='user_ad_request', cascade="all, delete-orphan")
+    campaigns = db.relationship('Campaign', backref='user_campaign', cascade="all, delete-orphan")
 
 
 class Campaign(db.Model):
@@ -35,8 +35,8 @@ class Campaign(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     # Relationships
-    ad_requests = db.relationship('AdRequest', backref='campaigns_ad_requests')
-    campaign_requests = db.relationship('CampaignRequest', backref='campaign_campaign_requests')
+    ad_requests = db.relationship('AdRequest', backref='campaigns_ad_requests', cascade="all, delete-orphan")
+    campaign_requests = db.relationship('CampaignRequest', backref='campaign_campaign_requests', cascade="all, delete-orphan")
 
 
 
@@ -57,7 +57,6 @@ class AdRequest(db.Model):
     # Relationships
     influencer = db.relationship('User', backref='ad_requests_user', foreign_keys=[influencer_id])
     campaign = db.relationship('Campaign', backref='ad_requests_campaign', foreign_keys=[campaign_id])
-
 
 
 class Influencer(db.Model):

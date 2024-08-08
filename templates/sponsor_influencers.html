@@ -16,6 +16,9 @@
                     <a class="nav-link" href="/sponsor_campaigns/{{ username }}">Campaigns</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('active_campaigns_sponsor', username=username) }}">Active Campaigns</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="/sponsor_influencers/{{ username }}">Influencers</a>
                 </li>
                 <li class="nav-item">
@@ -30,7 +33,6 @@
             </ul>
         </div>
     </nav>
-
     <div class="container mt-4">
         <h1>Influencers</h1>
         <form method="GET" action="/sponsor_influencers/{{ username }}" class="mb-4">

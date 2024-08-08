@@ -11,20 +11,17 @@
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <a class="navbar-brand" href="#">Admin Dashboard</a>
+    <a class="navbar-brand" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
     <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Info</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Find</a>
+                <a class="nav-link" href="{{ url_for('find_all') }}">Find</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('stats') }}">Stats</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('info') }}">Info</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -35,34 +32,107 @@
 
 <div class="container mt-4">
     <h1 class="text-center">Admin Stats</h1>
-    <canvas id="statsChart" width="200" height="100"></canvas>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <h4>Campaign Requests Status</h4>
+            <canvas id="campaignRequestsStatusChart"></canvas>
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4>Ad Requests Status</h4>
+            <canvas id="adRequestsStatusChart"></canvas>
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4>Campaign Visibility</h4>
+            <canvas id="campaignVisibilityChart"></canvas>
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4>Users by Role</h4>
+            <canvas id="usersByRoleChart"></canvas>
+        </div>
+    </div>
 </div>
 
 <!-- Bootstrap JS, Popper.js, and jQuery -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 <script>
-    const ctx = document.getElementById('statsChart').getContext('2d');
-        const statsData = {
-            labels: ['Users', 'Influencers', 'Sponsors', 'Campaigns'],
-            datasets: [{
-                label: 'Count',
-                data: JSON.parse('{{ stats_data | tojson }}'),
-                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
-            }]
-        };
-        const statsChart = new Chart(ctx, {
-            type: 'bar',
-            data: statsData,
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+    const ctxCampaignRequestsStatus = document.getElementById('campaignRequestsStatusChart').getContext('2d');
+    const ctxAdRequestsStatus = document.getElementById('adRequestsStatusChart').getContext('2d');
+    const ctxCampaignVisibility = document.getElementById('campaignVisibilityChart').getContext('2d');
+    const ctxUsersByRole = document.getElementById('usersByRoleChart').getContext('2d');
+
+    const campaignRequestsStatusData = {
+        labels: ['Completed', 'Pending'],
+        datasets: [{
+            label: 'Campaign Requests Status',
+            data: JSON.parse('{{ campaign_requests_status_data | tojson }}'),
+            backgroundColor: ['#28a745', '#ffc107']
+        }]
+    };
+
+    const adRequestsStatusData = {
+        labels: ['Completed', 'Pending'],
+        datasets: [{
+            label: 'Ad Requests Status',
+            data: JSON.parse('{{ ad_requests_status_data | tojson }}'),
+            backgroundColor: ['#007bff', '#6c757d']
+        }]
+    };
+
+    const campaignVisibilityData = {
+        labels: ['Public', 'Private'],
+        datasets: [{
+            label: 'Campaign Visibility',
+            data: JSON.parse('{{ campaign_visibility_data | tojson }}'),
+            backgroundColor: ['#dc3545', '#17a2b8']
+        }]
+    };
+
+    const usersByRoleData = {
+        labels: ['Admin', 'Influencer', 'Sponsor'],
+        datasets: [{
+            label: 'Users by Role',
+            data: JSON.parse('{{ users_by_role_data | tojson }}'),
+            backgroundColor: ['#007bff', '#28a745', '#ffc107']
+        }]
+    };
+
+    const campaignRequestsStatusChart = new Chart(ctxCampaignRequestsStatus, {
+        type: 'pie',
+        data: campaignRequestsStatusData
+    });
+
+    const adRequestsStatusChart = new Chart(ctxAdRequestsStatus, {
+        type: 'pie',
+        data: adRequestsStatusData
+    });
+
+    const campaignVisibilityChart = new Chart(ctxCampaignVisibility, {
+        type: 'bar',
+        data: campaignVisibilityData,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
             }
-        });
+        }
+    });
+
+    const usersByRoleChart = new Chart(ctxUsersByRole, {
+        type: 'bar',
+        data: usersByRoleData,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
 </script>
 </body>
 </html>

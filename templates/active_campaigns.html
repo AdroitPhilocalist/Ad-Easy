@@ -17,9 +17,12 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('active_campaigns', username=username) }}">Active Campaigns</a>
-              </li>
+            </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">Ad Requests</a>
+                <a class="nav-link" href="{{ url_for('ad_requests', username=username) }}">Ad Requests</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('campaign_requests', username=username) }}">Campaign Requests</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -48,6 +51,12 @@
                                 <strong>Company Name:</strong> {{ item.sponsor_company }}<br>
                                 <!-- Add other campaign details if needed -->
                             </p>
+                            <!-- Mark as Completed Button -->
+                            <form action="{{ url_for('mark_campaign_completed', campaign_id=item.campaign.id) }}" method="POST">
+                                <!-- Include a hidden input field to pass the username -->
+                                <input type="hidden" name="username" value="{{ username }}">
+                                <button type="submit" class="btn btn-success">Mark as Completed</button>
+                            </form>
                         </div>
                     </div>
                 </div>

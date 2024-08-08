@@ -1,11 +1,14 @@
 from flask import render_template, request, redirect, url_for
 from flask import current_app as app
+
 import os
 from flask import jsonify
-from io import BytesIO
+from sqlalchemy import or_
+
 from PIL import Image
-# backend/controller.py
 from backend.models import db, User, Campaign, AdRequest, Influencer, Sponsor, CampaignRequest
+from datetime import datetime
+
 
 
 @app.route('/')
@@ -46,8 +49,6 @@ def admin_login():
             return render_template('admin_login.html',msg="Invalid Credentials!!",credentials="false")
     return render_template('admin_login.html',msg="")
         
-    
-
 @app.route('/sponsor_login', methods=['GET', 'POST'])
 def sponsor_login():
     if request.method == 'POST':
@@ -82,12 +83,10 @@ def sponsor_login():
     
     return render_template('sponsor_login.html', msg="")
 
-
 def fetch_campaigns(id):
             user_campaigns=User.query.filter_by(id=id).first()
             return user_campaigns
     
-
 @app.route('/influencer_login', methods=['GET', 'POST'])
 def influencer_login():
     if request.method == 'POST':
@@ -212,19 +211,106 @@ def admin_dashboard():
         total_campaigns=total_campaigns
     )
 
+@app.route('/admin/info')
+def info():
+    ad_requests = AdRequest.query.all()
+    campaign_requests = CampaignRequest.query.all()
+    return render_template('info.html', ad_requests=ad_requests, campaign_requests=campaign_requests)
+
 @app.route('/admin/stats')
 def stats():
-    
+    # General counts
     total_users = User.query.count()
     total_influencers = Influencer.query.count()
     total_sponsors = Sponsor.query.count()
     total_campaigns = Campaign.query.count()
 
+    # Campaign Requests Status
+    completed_campaign_requests = CampaignRequest.query.filter_by(status='Completed').count()
+    pending_campaign_requests = CampaignRequest.query.filter_by(status='Pending').count()
+    campaign_requests_status_data = [completed_campaign_requests, pending_campaign_requests]
+
+    # Ad Requests Status
+    completed_ad_requests = AdRequest.query.filter_by(status='Completed').count()
+    pending_ad_requests = AdRequest.query.filter_by(status='Pending').count()
+    ad_requests_status_data = [completed_ad_requests, pending_ad_requests]
+
+    # Campaign Visibility
+    public_campaigns = Campaign.query.filter_by(visibility='public').count()
+    private_campaigns = Campaign.query.filter_by(visibility='private').count()
+    campaign_visibility_data = [public_campaigns, private_campaigns]
+
+    # Users by Role
+    admins = User.query.filter_by(role='admin').count()
+    influencers = User.query.filter_by(role='influencer').count()
+    sponsors = User.query.filter_by(role='sponsor').count()
+    users_by_role_data = [admins, influencers, sponsors]
+
+    # Aggregate data for bar chart on general stats
     stats_data = [total_users, total_influencers, total_sponsors, total_campaigns]
 
-    return render_template('stats.html', stats_data=stats_data)
+    return render_template('stats.html', 
+                           stats_data=stats_data,
+                           campaign_requests_status_data=campaign_requests_status_data,
+                           ad_requests_status_data=ad_requests_status_data,
+                           campaign_visibility_data=campaign_visibility_data,
+                           users_by_role_data=users_by_role_data)
 
+@app.route('/find_all')
+def find_all():
+    influencers = Influencer.query.all()
+    sponsors = Sponsor.query.all()
+    campaigns = Campaign.query.all()
+    return render_template('find_all.html', influencers=influencers, sponsors=sponsors, campaigns=campaigns)
 
+@app.route('/delete_record/<string:record_type>/<int:record_id>', methods=['POST'])
+def delete_record(record_type, record_id):
+    try:
+        if record_type == 'influencer':
+            # Fetch the influencer and associated user
+            record = Influencer.query.get_or_404(record_id)
+            user = User.query.get(record.user_id)
+            
+            # Delete the influencer
+            db.session.delete(record)
+            
+            # Delete the associated user if necessary
+            if user:
+                db.session.delete(user)
+            
+        elif record_type == 'sponsor':
+            # Fetch the sponsor and associated user
+            record = Sponsor.query.get_or_404(record_id)
+            user = User.query.get(record.user_id)
+            
+            # Delete the sponsor
+            db.session.delete(record)
+            
+            # Delete the associated user if necessary
+            if user:
+                db.session.delete(user)
+            
+        elif record_type == 'campaign':
+            # Fetch the campaign and associated ad requests
+            record = Campaign.query.get_or_404(record_id)
+            ad_requests = AdRequest.query.filter_by(campaign_id=record_id).all()
+            
+            # Delete all related ad requests
+            for ad_request in ad_requests:
+                db.session.delete(ad_request)
+            
+            # Delete the campaign
+            db.session.delete(record)
+            
+        else:
+            return "Invalid record type", 400
+
+        db.session.commit()
+        return redirect(url_for('find_all'))
+    
+    except Exception as e:
+        db.session.rollback()
+        return str(e), 500
 
 @app.route('/sponsor_dashboard', methods=['GET', 'POST'])
 @app.route('/sponsor_dashboard/<username>', methods=['GET', 'POST'])
@@ -294,8 +380,6 @@ def sponsor_campaign_requests(username):
     # Handle cases where user is not found or does not have the correct role
     return redirect(url_for('index'))
 
-
-
 @app.route('/handle_campaign_request/<int:request_id>/<action>', methods=['POST'])
 def handle_campaign_request(request_id, action):
     campaign_request = CampaignRequest.query.get(request_id)
@@ -303,7 +387,7 @@ def handle_campaign_request(request_id, action):
     if campaign_request:
         if action == 'accept':
             # Update the request status
-            campaign_request.status = 'Accepted'
+            campaign_request.status = "Accepted and Active"
         elif action == 'reject':
             # Delete the request from the database
             db.session.delete(campaign_request)
@@ -358,9 +442,6 @@ def delete_ad_request(request_id):
     # Redirect to the sponsor ad requests page
     return redirect(url_for('sponsor_ad_requests', username=sponsor.user.username))
 
-
-
-
 @app.route('/sponsor_ad_requests/<string:username>')
 def sponsor_ad_requests(username):
     # Fetch the sponsor user
@@ -379,9 +460,60 @@ def sponsor_ad_requests(username):
 
     return render_template('sponsor_ad_requests.html', username=username, ad_requests=ad_requests)
 
+@app.route('/make_payment/<int:request_id>', methods=['POST'])
+def make_payment(request_id):
+    # Retrieve the ad request
+    ad_request = AdRequest.query.get_or_404(request_id)
+    
+    # Update the payment status
+    ad_request.payment = True
+    
+    # Commit the changes to the database
+    db.session.commit()
+    
+    # Retrieve the username from the form or session
+    username = request.form.get('username')
+    
+    if username is None:
+        # Handle the case where 'username' is not provided
+        return redirect(url_for('sponsor_dashboard'))  # Or another appropriate redirect
 
+    return redirect(url_for('sponsor_ad_requests', username=username))
 
+@app.route('/confirm_payment/<int:request_id>', methods=['POST'])
+def confirm_payment(request_id):
+    campaign_request = CampaignRequest.query.get_or_404(request_id)
+    
+    campaign_request.payment= True
+    db.session.commit()
+    username = request.form.get('username')
+    
+    return redirect(url_for('sponsor_campaign_requests', username=username))
 
+@app.route('/active_campaigns_sponsor/<string:username>')
+def active_campaigns_sponsor(username):
+    # Fetch the user and sponsor based on username
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        return "User not found", 404
+    
+    current_sponsor = Sponsor.query.filter_by(user_id=user.id).first()
+    if current_sponsor is None:
+        return "Sponsor not found", 404
+    sponsor_id=current_sponsor.id
+    # Query to get active campaigns for the sponsor
+    active_campaigns = Campaign.query.filter_by(user_id=user.id).all()
+    active_campaigns = db.session.query(Campaign).join(AdRequest, isouter=True).join(CampaignRequest, isouter=True).filter(
+        or_(
+            AdRequest.influencer_id == sponsor_id,
+            CampaignRequest.influencer_id == sponsor_id
+        ),
+        or_(
+            AdRequest.status == "Accepted and Active",
+            CampaignRequest.status == "Accepted and Active"
+        )
+    ).all()
+    return render_template('sponsor_active_campaigns.html', username=username, campaigns=active_campaigns)
 
 @app.route('/sponsor_influencers/<username>', methods=['GET'])
 def sponsor_influencers(username):
@@ -457,8 +589,6 @@ def get_campaigns_for_influencer(influencer_id):
 
     return jsonify({'campaigns': campaign_list})
 
-    
-
 @app.route('/sponsor_campaigns/<username>', methods=['GET'])
 def campaigns_page(username):
     user = User.query.filter_by(username=username).first()
@@ -468,9 +598,6 @@ def campaigns_page(username):
             sponsor_campaigns=fetch_campaigns(user.id).campaigns
             return render_template('sponsor_campaigns.html', campaigns=sponsor_campaigns, username=username)
     return redirect(url_for('sponsor_dashboard', username=username))
-
-
-from datetime import datetime
 
 @app.route('/create_campaign/<string:username>', methods=['POST'])
 def create_campaign(username):
@@ -512,7 +639,6 @@ def create_campaign(username):
 
     return render_template('create_campaign.html')
 
-
 @app.route('/edit_campaign/<username>', methods=['POST'])
 def edit_campaign(username):
     if request.method == 'POST':
@@ -545,9 +671,6 @@ def delete_campaign(username):
             db.session.commit()
         return redirect(f'/sponsor_campaigns/{username}')
     
-
-
-
 @app.route('/influencer_dashboard', methods=['GET', 'POST'])
 @app.route('/influencer_dashboard/<username>', methods=['GET', 'POST'])
 def influencer_dashboard(username=None):
@@ -645,6 +768,7 @@ def influencer_campaigns(username):
     return render_template('influencer_campaigns.html',
                            username=username,
                            campaigns=filtered_campaigns)
+
 @app.route('/accept_ad_request/<int:ad_request_id>/<string:username>', methods=['POST'])
 def accept_ad_request(ad_request_id,username):
     ad_request = AdRequest.query.get(ad_request_id)
@@ -677,9 +801,15 @@ def active_campaigns(username):
     influencer_id = current_influencer.id
 
     # Query to get active campaigns for the influencer
-    active_campaigns = db.session.query(Campaign).join(AdRequest).filter(
-        AdRequest.influencer_id == influencer_id,
-        AdRequest.status == "Accepted and Active"
+    active_campaigns = db.session.query(Campaign).join(AdRequest, isouter=True).join(CampaignRequest, isouter=True).filter(
+        or_(
+            AdRequest.influencer_id == influencer_id,
+            CampaignRequest.influencer_id == influencer_id
+        ),
+        or_(
+            AdRequest.status == "Accepted and Active",
+            CampaignRequest.status == "Accepted and Active"
+        )
     ).all()
     
     # Fetch the company names of the sponsors
@@ -700,7 +830,6 @@ def active_campaigns(username):
         })
 
     return render_template('active_campaigns.html', username=username, campaigns=campaigns_with_sponsors)
-
 
 @app.route('/submit_campaign_request/<string:username>', methods=['POST'])
 def submit_campaign_request(username):
@@ -743,12 +872,96 @@ def submit_campaign_request(username):
 
     return redirect(url_for('influencer_campaigns', username=username))
 
+@app.route('/influencer_ad_requests/<string:username>')
+def ad_requests(username):
+    # Fetch the influencer user
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        return "User not found", 404
+    
+    influencer = Influencer.query.filter_by(user_id=user.id).first()
+    if influencer is None:
+        return "Influencer not found", 404
+    
+    # Fetch all ad requests associated with the influencer
+    ad_requests = AdRequest.query.filter_by(influencer_id=influencer.id).all()
 
+    return render_template('influencer_ad_requests.html', username=username, ad_requests=ad_requests)
 
+@app.route('/influencer_campaign_requests/<username>', methods=['GET'])
+def campaign_requests(username):
+    # Fetch the user
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        return "User not found", 404
+    
+    # Check if user is an influencer
+    if user.role != 'influencer':
+        return "Not an influencer", 403
+    
+    # Fetch the influencer
+    influencer = Influencer.query.filter_by(user_id=user.id).first()
+    if influencer is None:
+        return "Influencer not found", 404
 
+    # Fetch all campaign requests for the influencer
+    campaign_requests = CampaignRequest.query.filter_by(influencer_id=influencer.user_id).all()
+    
+    return render_template('influencer_campaign_requests.html', username=username, campaign_requests=campaign_requests)
 
+@app.route('/mark_campaign_completed/<int:campaign_id>', methods=['POST'])
+def mark_campaign_completed(campaign_id):
+    # Retrieve the campaign
+    campaign = Campaign.query.get_or_404(campaign_id)
+    
+    # Update campaign status
+    campaign.status = 'Completed'
+    
+    # Retrieve and update related CampaignRequests
+    campaign_requests = CampaignRequest.query.filter_by(campaign_id=campaign_id).all()
+    for req in campaign_requests:
+        req.status = 'Completed'
+    
+    # Retrieve and update related AdRequests
+    ad_requests = AdRequest.query.filter_by(campaign_id=campaign_id).all()
+    for req in ad_requests:
+        req.status = 'Completed'
+    
+    # Commit the changes to the database
+    db.session.commit()
+    
+    # Extract username from the form data
+    username = request.form.get('username')
+    
+    # Redirect back to the active campaigns page
+    return redirect(url_for('active_campaigns', username=username))
 
+@app.route('/update_campaign_request', methods=['POST'])
+def update_campaign_request():
+    request_id = request.form['request_id']
+    message = request.form['message']
+    payment_amount = request.form['payment_amount']
+  
+    # Fetch and update the campaign request
+    campaign_request = CampaignRequest.query.get(request_id)
+    if campaign_request:
+        campaign_request.messages = message
+        campaign_request.payment_amount = payment_amount
+        db.session.commit()
+    
+    # Redirect to the influencer dashboard
+    username = request.form['username']
+    return redirect(url_for('influencer_dashboard', username=username))
 
+@app.route('/delete_campaign_request/<int:campaign_request_id>/<string:username>', methods=['POST'])
+def delete_campaign_request(campaign_request_id, username):
+    campaign_request = CampaignRequest.query.get(campaign_request_id)
+    if campaign_request:
+        db.session.delete(campaign_request)
+        db.session.commit()
+    
+    # Redirect to the influencer dashboard
+    return redirect(url_for('influencer_dashboard', username=username))
 
 @app.route('/logout')
 def logout():

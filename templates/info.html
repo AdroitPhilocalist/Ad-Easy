@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Info</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <a class="navbar-brand" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('find_all') }}">Find</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stats') }}">Stats</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('info') }}">Info</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="text-center">Admin Info</h1>
+    
+    <!-- Ad Requests Table -->
+    <div class="mb-4">
+        <h3>Ad Requests</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Campaign ID</th>
+                    <th>Influencer ID</th>
+                    <th>Payment Amount</th>
+                    <th>Status</th>
+                    <th>Payment Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ad_request in ad_requests %}
+                <tr>
+                    <td>{{ ad_request.id }}</td>
+                    <td>{{ ad_request.campaign_id }}</td>
+                    <td>{{ ad_request.influencer_id }}</td>
+                    <td>{{ ad_request.payment_amount }}</td>
+                    <td>{{ ad_request.status }}</td>
+                    <td>{{ 'Yes' if ad_request.payment else 'No' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Campaign Requests Table -->
+    <div class="mb-4">
+        <h3>Campaign Requests</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Influencer ID</th>
+                    <th>Sponsor ID</th>
+                    <th>Payment Amount</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                    <th>Payment Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for campaign_request in campaign_requests %}
+                <tr>
+                    <td>{{ campaign_request.id }}</td>
+                    <td>{{ campaign_request.influencer_id }}</td>
+                    <td>{{ campaign_request.sponsor_id }}</td>
+                    <td>{{ campaign_request.payment_amount }}</td>
+                    <td>{{ campaign_request.status }}</td>
+                    <td>{{ campaign_request.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ 'Yes' if campaign_request.payment else 'No' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

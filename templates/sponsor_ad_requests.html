@@ -17,6 +17,9 @@
                     <a class="nav-link" href="/sponsor_campaigns/{{ username }}">Campaigns</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('active_campaigns_sponsor', username=username) }}">Active Campaigns</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="/sponsor_influencers/{{ username }}">Influencers</a>
                 </li>
                 <li class="nav-item">
@@ -54,10 +57,19 @@
                                     <!-- Add other request details if needed -->
                                 </p>
                                 <!-- Edit and Delete Buttons -->
+                                {% if request.status == 'Pending' %}
                                 <button class="btn btn-primary" data-toggle="modal" data-target="#editModal{{ request.id }}">Edit</button>
                                 <form action="{{ url_for('delete_ad_request', request_id=request.id) }}" method="POST" style="display:inline;">
                                     <button type="submit" class="btn btn-danger">Delete</button>
                                 </form>
+                                {% endif %}
+                                <!-- Make Payment Button -->
+                                {% if request.status == 'Completed' and not request.payment %}
+                                <form action="{{ url_for('make_payment', request_id=request.id) }}" method="POST" style="display:inline;">
+                                    <input type="hidden" name="username" value="{{ username }}">
+                                    <button type="submit" class="btn btn-success">Make Payment</button>
+                                </form>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

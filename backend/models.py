@@ -46,6 +46,7 @@ class AdRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
     influencer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sponsor_id = db.Column(db.Integer, db.ForeignKey('sponsor.id'), nullable=True)  # Added this field
     messages = db.Column(db.Text, nullable=True)
     requirements = db.Column(db.Text, nullable=False)
     payment_amount = db.Column(db.Float, nullable=False)
@@ -57,6 +58,8 @@ class AdRequest(db.Model):
     # Relationships
     influencer = db.relationship('User', backref='ad_requests_user', foreign_keys=[influencer_id])
     campaign = db.relationship('Campaign', backref='ad_requests_campaign', foreign_keys=[campaign_id])
+    sponsor = db.relationship('Sponsor', backref='ad_requests_sponsor', foreign_keys=[sponsor_id])
+
 
 
 class Influencer(db.Model):

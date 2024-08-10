@@ -3,7 +3,7 @@ from flask import current_app as app
 
 import os
 from flask import jsonify
-from sqlalchemy import or_
+from sqlalchemy import or_,and_
 
 from PIL import Image
 from backend.models import db, User, Campaign, AdRequest, Influencer, Sponsor, CampaignRequest
@@ -500,20 +500,28 @@ def active_campaigns_sponsor(username):
     current_sponsor = Sponsor.query.filter_by(user_id=user.id).first()
     if current_sponsor is None:
         return "Sponsor not found", 404
-    sponsor_id=current_sponsor.id
+    
+    sponsor_id = current_sponsor.id
+
     # Query to get active campaigns for the sponsor
-    active_campaigns = Campaign.query.filter_by(user_id=user.id).all()
     active_campaigns = db.session.query(Campaign).join(AdRequest, isouter=True).join(CampaignRequest, isouter=True).filter(
         or_(
-            AdRequest.influencer_id == sponsor_id,
-            CampaignRequest.influencer_id == sponsor_id
-        ),
-        or_(
-            AdRequest.status == "Accepted and Active",
-            CampaignRequest.status == "Accepted and Active"
+            and_(
+                AdRequest.sponsor_id == sponsor_id,
+                AdRequest.status == "Accepted and Active",
+                AdRequest.campaign_id == Campaign.id
+            ),
+            and_(
+                CampaignRequest.sponsor_id == sponsor_id,
+                CampaignRequest.status == "Accepted and Active",
+                CampaignRequest.campaign_id == Campaign.id
+            )
         )
-    ).all()
+    ).distinct().all()
+
     return render_template('sponsor_active_campaigns.html', username=username, campaigns=active_campaigns)
+
+
 
 @app.route('/sponsor_influencers/<username>', methods=['GET'])
 def sponsor_influencers(username):
@@ -546,9 +554,10 @@ def submit_ad_request(username):
     if not user or user.role != 'sponsor':
         
         return redirect(url_for('sponsor_dashboard', username=username))
-
+    sponsor = Sponsor.query.filter_by(user_id=user.id).first()
     campaign_id = request.form.get('campaign_id')
     influencer_id = request.form.get('influencer_id')
+    sponsor_id = sponsor.id
     messages = request.form.get('messages')
     requirements = request.form.get('requirements')
     payment_amount = float(request.form['payment_amount'])
@@ -556,12 +565,13 @@ def submit_ad_request(username):
 
     campaign = Campaign.query.get(campaign_id)
     influencer = Influencer.query.get(influencer_id)
-
+    sponsor = Sponsor.query.get(sponsor_id) 
     
 
     ad_request = AdRequest(
         campaign_id=campaign_id,
         influencer_id=influencer_id,
+        sponsor_id=sponsor_id,
         messages=messages,
         requirements=requirements,
         payment_amount=payment_amount,
@@ -798,19 +808,31 @@ def active_campaigns(username):
     if current_influencer is None:
         return "Influencer not found", 404
     
-    influencer_id = current_influencer.id
+    influencer_id = current_influencer.user_id
 
     # Query to get active campaigns for the influencer
     active_campaigns = db.session.query(Campaign).join(AdRequest, isouter=True).join(CampaignRequest, isouter=True).filter(
         or_(
-            AdRequest.influencer_id == influencer_id,
-            CampaignRequest.influencer_id == influencer_id
+            and_(
+                AdRequest.influencer_id == current_influencer.id,
+                AdRequest.status == "Accepted and Active"
+            ),
+            and_(
+                CampaignRequest.influencer_id == influencer_id,
+                CampaignRequest.status == "Accepted and Active"
+            )
         ),
         or_(
-            AdRequest.status == "Accepted and Active",
-            CampaignRequest.status == "Accepted and Active"
+            and_(
+                AdRequest.campaign_id == Campaign.id,
+                AdRequest.status == "Accepted and Active"
+            ),
+            and_(
+                CampaignRequest.campaign_id == Campaign.id,
+                CampaignRequest.status == "Accepted and Active"
+            )
         )
-    ).all()
+    ).distinct().all()
     
     # Fetch the company names of the sponsors
     campaigns_with_sponsors = []
@@ -830,6 +852,7 @@ def active_campaigns(username):
         })
 
     return render_template('active_campaigns.html', username=username, campaigns=campaigns_with_sponsors)
+
 
 @app.route('/submit_campaign_request/<string:username>', methods=['POST'])
 def submit_campaign_request(username):

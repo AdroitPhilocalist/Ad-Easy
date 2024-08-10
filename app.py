@@ -1,5 +1,6 @@
 from flask import Flask
 from backend.models import *
+
 app=None
 def init_app():
     myapp=Flask(__name__)
@@ -10,6 +11,7 @@ def init_app():
     
     
     db.init_app(myapp)
+
     return myapp
 
 app=init_app()

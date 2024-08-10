@@ -118,6 +118,7 @@
                     <form id="adRequestForm" method="POST" action="/submit_ad_request/{{ username }}">
                         <input type="hidden" name="campaign_id" id="adCampaignId">
                         <input type="hidden" name="influencer_id" id="adInfluencerId">
+                        <input type="hidden" name="sponsor_id" value="{{ sponsor_id }}"> 
                         <div class="form-group">
                             <label for="messages">Messages</label>
                             <textarea class="form-control" id="messages" name="messages" rows="3" required></textarea>
@@ -176,14 +177,17 @@
 
         // Populate ad request modal with campaign and influencer IDs
         $('#adRequestModal').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget); // Button that triggered the modal
-            var campaignId = button.data('campaign-id');
-            var influencerId = button.data('influencer-id');
-            
-            var modal = $(this);
-            modal.find('#adCampaignId').val(campaignId);
-            modal.find('#adInfluencerId').val(influencerId);
-        });
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var campaignId = button.data('campaign-id');
+        var influencerId = button.data('influencer-id');
+        var sponsorId = '{{ sponsor_id }}'; 
+
+        var modal = $(this);
+        modal.find('#adCampaignId').val(campaignId);
+        modal.find('#adInfluencerId').val(influencerId);
+        modal.find('input[name="sponsor_id"]').val(sponsorId); // Set sponsor_id
+    });
+
     </script>
 </body>
 </html>

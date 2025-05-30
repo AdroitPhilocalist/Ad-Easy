@@ -1,7 +1,7 @@
 # Ad-Easy
 
 Ad-Easy is a Flask-based web application that facilitates connections between influencers and sponsors for advertising campaigns. The platform provides separate dashboards for influencers, sponsors, and administrators to manage advertising requests and campaigns.
-
+fgbdd
 ## Features
 
 - User role-based access (Influencers, Sponsors, Admins)

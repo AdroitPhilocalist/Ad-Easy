@@ -1,4 +1,4 @@
-// Ad-Easy Custom JavaScript
+// Add-Easy Custom JavaScript
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -77,4 +77,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         statValues.forEach(stat => observer.observe(stat));
     }
+    
+    // Add page loading animation
+    const pageLoader = document.createElement('div');
+    pageLoader.classList.add('page-loader');
+    pageLoader.innerHTML = `
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    `;
+    document.body.appendChild(pageLoader);
+    
+    // Hide loader after page loads
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            pageLoader.classList.add('loader-hidden');
+            setTimeout(function() {
+                pageLoader.remove();
+            }, 500);
+        }, 500);
+    });
 });

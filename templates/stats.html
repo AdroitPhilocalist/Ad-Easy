@@ -133,6 +133,49 @@
             }
         }
     });
+
+    // Add this to your chart configurations
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    font: {
+                        family: 'Poppins',
+                        size: 12
+                    }
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                padding: 15,
+                cornerRadius: 8,
+                titleFont: {
+                    family: 'Montserrat',
+                    size: 14,
+                    weight: 'bold'
+                },
+                bodyFont: {
+                    family: 'Poppins',
+                    size: 13
+                }
+            }
+        },
+        animation: {
+            duration: 2000,
+            easing: 'easeOutQuart'
+        }
+    };
+    
+    // Apply these options to each chart
+    new Chart(ctxCampaignRequestsStatus, {
+        type: 'doughnut',
+        data: campaignRequestsStatusData,
+        options: chartOptions
+    });
 </script>
 </body>
 </html>
